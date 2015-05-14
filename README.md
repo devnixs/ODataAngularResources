@@ -10,7 +10,7 @@ It does everything Angular Resources does but add some features:
 
 ##How to install
 
-1. include the file **odataresources.js** into your project
+1. include the file **build/odataresources.js** into your project
 
 2. Be sure to register the module "ODataResources" in your module definition : 
 ```javascript
