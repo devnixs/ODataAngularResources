@@ -53,7 +53,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 						queryString += ",";
 					}
 					queryString += this.sortOrders[i].execute();
-				};
+				}
 			}
 
 			if (this.takeAmount) {

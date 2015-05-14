@@ -1,5 +1,5 @@
 /**
- * @license AngularJS v1.3.12
+ * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
  */
@@ -913,7 +913,7 @@ angular.mock.dump = function(object) {
  * development please see {@link ngMockE2E.$httpBackend e2e $httpBackend mock}.
  *
  * During unit testing, we want our unit tests to run quickly and have no external dependencies so
- * we donâ€™t want to send [XHR](https://developer.mozilla.org/en/xmlhttprequest) or
+ * we don’t want to send [XHR](https://developer.mozilla.org/en/xmlhttprequest) or
  * [JSONP](http://en.wikipedia.org/wiki/JSONP) requests to a real server. All we really need is
  * to verify whether a certain request has been sent or not, or alternatively just let the
  * application make requests, respond with pre-trained responses and assert that the end result is
@@ -1089,7 +1089,7 @@ angular.mock.dump = function(object) {
          var controller = createController();
          $httpBackend.flush();
 
-         // now you donâ€™t care about the authentication, but
+         // now you don’t care about the authentication, but
          // the controller will still send the request and
          // $httpBackend will respond without you having to
          // specify the expectation and response for this request
@@ -1244,10 +1244,10 @@ function createHttpBackendMock($rootScope, $timeout, $delegate, $browser) {
    *   request is handled. You can save this object for later use and invoke `respond` again in
    *   order to change how a matched request is handled.
    *
-   *  - respond â€“
+   *  - respond –
    *      `{function([status,] data[, headers, statusText])
    *      | function(function(method, url, data, headers)}`
-   *    â€“ The respond method takes a set of static data to be returned or a function that can
+   *    – The respond method takes a set of static data to be returned or a function that can
    *    return an array containing response status (number), response data (string), response
    *    headers (Object), and the text for the status (string). The respond method returns the
    *    `requestHandler` object for possible overrides.
@@ -1381,10 +1381,10 @@ function createHttpBackendMock($rootScope, $timeout, $delegate, $browser) {
    *  request is handled. You can save this object for later use and invoke `respond` again in
    *  order to change how a matched request is handled.
    *
-   *  - respond â€“
+   *  - respond –
    *    `{function([status,] data[, headers, statusText])
    *    | function(function(method, url, data, headers)}`
-   *    â€“ The respond method takes a set of static data to be returned or a function that can
+   *    – The respond method takes a set of static data to be returned or a function that can
    *    return an array containing response status (number), response data (string), response
    *    headers (Object), and the text for the status (string). The respond method returns the
    *    `requestHandler` object for possible overrides.
@@ -1810,6 +1810,77 @@ angular.mock.$RootElementProvider = function() {
 };
 
 /**
+ * @ngdoc service
+ * @name $controller
+ * @description
+ * A decorator for {@link ng.$controller} with additional `bindings` parameter, useful when testing
+ * controllers of directives that use {@link $compile#-bindtocontroller- `bindToController`}.
+ *
+ *
+ * ## Example
+ *
+ * ```js
+ *
+ * // Directive definition ...
+ *
+ * myMod.directive('myDirective', {
+ *   controller: 'MyDirectiveController',
+ *   bindToController: {
+ *     name: '@'
+ *   }
+ * });
+ *
+ *
+ * // Controller definition ...
+ *
+ * myMod.controller('MyDirectiveController', ['log', function($log) {
+ *   $log.info(this.name);
+ * })];
+ *
+ *
+ * // In a test ...
+ *
+ * describe('myDirectiveController', function() {
+ *   it('should write the bound name to the log', inject(function($controller, $log) {
+ *     var ctrl = $controller('MyDirective', { /* no locals &#42;/ }, { name: 'Clark Kent' });
+ *     expect(ctrl.name).toEqual('Clark Kent');
+ *     expect($log.info.logs).toEqual(['Clark Kent']);
+ *   });
+ * });
+ *
+ * ```
+ *
+ * @param {Function|string} constructor If called with a function then it's considered to be the
+ *    controller constructor function. Otherwise it's considered to be a string which is used
+ *    to retrieve the controller constructor using the following steps:
+ *
+ *    * check if a controller with given name is registered via `$controllerProvider`
+ *    * check if evaluating the string on the current scope returns a constructor
+ *    * if $controllerProvider#allowGlobals, check `window[constructor]` on the global
+ *      `window` object (not recommended)
+ *
+ *    The string can use the `controller as property` syntax, where the controller instance is published
+ *    as the specified property on the `scope`; the `scope` must be injected into `locals` param for this
+ *    to work correctly.
+ *
+ * @param {Object} locals Injection locals for Controller.
+ * @param {Object=} bindings Properties to add to the controller before invoking the constructor. This is used
+ *                           to simulate the `bindToController` feature and simplify certain kinds of tests.
+ * @return {Object} Instance of given controller.
+ */
+angular.mock.$ControllerDecorator = ['$delegate', function($delegate) {
+  return function(expression, locals, later, ident) {
+    if (later && typeof later === 'object') {
+      var create = $delegate(expression, locals, true, ident);
+      angular.extend(create.instance, later);
+      return create();
+    }
+    return $delegate(expression, locals, later, ident);
+  };
+}];
+
+
+/**
  * @ngdoc module
  * @name ngMock
  * @packageName angular-mocks
@@ -1837,6 +1908,7 @@ angular.module('ngMock', ['ng']).provider({
   $provide.decorator('$$rAF', angular.mock.$RAFDecorator);
   $provide.decorator('$$asyncCallback', angular.mock.$AsyncCallbackDecorator);
   $provide.decorator('$rootScope', angular.mock.$RootScopeDecorator);
+  $provide.decorator('$controller', angular.mock.$ControllerDecorator);
 }]);
 
 /**
@@ -1922,13 +1994,13 @@ angular.module('ngMockE2E', ['ng']).config(['$provide', function($provide) {
  *   control how a matched request is handled. You can save this object for later use and invoke
  *   `respond` or `passThrough` again in order to change how a matched request is handled.
  *
- *  - respond â€“
+ *  - respond –
  *    `{function([status,] data[, headers, statusText])
  *    | function(function(method, url, data, headers)}`
- *    â€“ The respond method takes a set of static data to be returned or a function that can return
+ *    – The respond method takes a set of static data to be returned or a function that can return
  *    an array containing response status (number), response data (string), response headers
  *    (Object), and the text for the status (string).
- *  - passThrough â€“ `{function()}` â€“ Any request matching a backend definition with
+ *  - passThrough – `{function()}` – Any request matching a backend definition with
  *    `passThrough` handler will be passed through to the real backend (an XHR request will be made
  *    to the server.)
  *  - Both methods return the `requestHandler` object for possible overrides.
@@ -2134,7 +2206,7 @@ angular.mock.$RootScopeDecorator = ['$delegate', function($delegate) {
 if (window.jasmine || window.mocha) {
 
   var currentSpec = null,
-      annotatedFunctions,
+      annotatedFunctions = [],
       isSpecRunning = function() {
         return !!currentSpec;
       };

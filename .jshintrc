@@ -1,0 +1,17 @@
+{
+  "node": true,
+  "globals": {
+    "describe":   false,
+    "it":         false,
+    "before":     false,
+    "beforeEach": false,
+    "after":      false,
+    "expect":     false,
+    "afterEach":  false,
+    "jasmine":     false,
+    "inject":     false,
+    "module":     false,
+    "angular":    false,
+    "_":          false
+  }
+}

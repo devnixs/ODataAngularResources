@@ -14,7 +14,7 @@
   var MEMBER_NAME_REGEX = /^(\.[a-zA-Z_$@][0-9a-zA-Z_$@]*)+$/;
 
   function isValidDottedPath(path) {
-    return (path != null && path !== '' && path !== 'hasOwnProperty' &&
+    return (path !== null && path !== '' && path !== 'hasOwnProperty' &&
       MEMBER_NAME_REGEX.test('.' + path));
   }
 
