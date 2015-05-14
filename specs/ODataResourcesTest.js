@@ -79,15 +79,14 @@
 				$httpBackend.expectGET("/user?$filter=Name eq 'Raphael'").respond(200, [{Name:"Raphael"}, {Name:"Anais"}]);
 				var users = User.odata().filter("Name", "Raphael").query();
 				$httpBackend.flush();
-				console.log(users[0]);
 				expect(users[0].$save).toBeDefined();
 			});
 
 
 			it('filters should work with funcs', function() {
-				$httpBackend.expectGET("/user?$filter=endswith(Name eq 'Raphael') eq true").respond(200, [1, 2]);
+				$httpBackend.expectGET("/user?$filter=endswith(Name,'Raphael') eq true").respond(200, [1, 2]);
 				var users = User.odata()
-				.filter(new $odata.Func("endswith","Name","el"), true)
+				.filter(new $odata.Func("endswith","Name","Raphael"), true)
 				.query();
 				$httpBackend.flush();
 
