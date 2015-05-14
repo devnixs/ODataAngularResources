@@ -13,13 +13,10 @@ It does everything Angular Resources does but add some features:
 1. include the file **odataresources.js** into your project
 
 2. Be sure to register the module "ODataResources" in your module definition : 
-
 ```javascript
 var myModule = angular.module('myModule',['ODataResources']);
 ```
-
 3. Then replace your dependency to "$resource" by "$odataresource"
-
 ```javascript
 myModule.controller('MyController', ['$scope','$odataresource',function($scope,$odataresource){}]);
 ```
@@ -109,19 +106,54 @@ var predicate = new $odata.Predicate("FirstName", "John")
                             .and(new $odata.Predicate("Age", '>', 10));
 //
 User.odata().filter(predicate).query();
-//Queries /user?$filter=(FirstName eq 'John') or (LastName ne 'Doe')
+//Queries /user?$filter=((FirstName eq 'John') or (LastName ne 'Doe')) and Age gt 10
+```
+
+### Overrinding default Predicate or Filter behavior
+It is sometime necessary to compare two properties or two values in a query.
+To do so, you can use the $odata.Value or $odata.Property classes
+```javascript
+var predicate = new $odata.Predicate(
+                            new $odata.Value('Foo'),
+                            new $odata.Value('Bar')
+                            );
+//
+User.odata().filter(predicate).query();
+//Queries /user?$filter='Foo' eq 'Bar'
+```
+Or we two properties : 
+```javascript
+var predicate = new $odata.Predicate(
+                            new $odata.Property('Name'),
+                            new $odata.Property('Surname')
+                            );
+//
+User.odata().filter(predicate).query();
+//Queries /user?$filter=Name eq Surname
 ```
 
 ###Function calls
 * You can call functions like endswith or length on an OData query.
-To do so use, the **$odata.Func** class.
+To do so, use the **$odata.Func** class.
 ```javascript
 var users = User.odata()
 .filter(new $odata.Func("endswith","FullName","Doe"), true)
 .query();
 //Queries /user?$filter=endswith(Name eq 'Raphael') eq true
 ```
-* Here's the list of available functions
+
+####Definition
+$odata.Func(**MethodName**, **PropertyName**, **Value1**, **Value2**,...)
+The parameters are assumed to be first, a property and then a value.
+This behavior can be overriden by specifying explicit values or properties : 
+```javascript
+new $odata.Func('substringof',
+                            new $odata.Value('Alfreds'),
+                            new $odata.Property('CompanyName')
+                );
+```
+
+####List of available functions
 
 Function | Example | Example value
 --------- | --------- | -----------
@@ -155,3 +187,27 @@ decimal ceiling(decimal p0) | new $odata.Func('floor','Freight')  | 33
 **Type Functions** | | 
 bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.String') | true
 
+
+
+### Build from the soruce
+
+1. You need Grunt installed globally:
+```sh
+> npm install -g grunt
+```
+2. Then run
+```sh
+> npm install
+> grunt build
+```
+
+### Run the tests
+* Simply run
+```sh
+> grunt test
+```
+
+### Contribute
+
+Want to contribute? Great!
+Be sure to write tests before submitting your pull request.
