@@ -1,6 +1,6 @@
 # ODataAngularResources
 
-ODataAngularResources is a fork of the Angular's $resource that allows to make OData queries in a fluent way.
+ODataAngularResources is a fork of Angular's $resource that allows to make OData queries in a fluent way.
 It does everything Angular Resources does but add some features:
 
   - Fluent API
@@ -64,14 +64,14 @@ var myUsers =   User.odata()
                     
 //Queries /user?$filter=(Name eq 'Raphael') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10
 ```
-- Multiple chained filters are executed with and between.
+- Multiple chained filters are executed with **and** between.
 - orderBy assumes the order to be asc if the second parameter is not specified.
 
 
 ##Advanced queries
 
 ###Predicates
-* If you need to write or statements in you queries, you need to use the Predicate class.
+* If you need to write or statements in your queries, you need to use the Predicate class.
 First, be sure to reference the **$odata** dependency.
 ```javascript
 myModule.controller('MyController', ['$scope','$odataresource','$odata',function($scope,$odataresource,$odata){}]);
@@ -109,7 +109,7 @@ User.odata().filter(predicate).query();
 //Queries /user?$filter=((FirstName eq 'John') or (LastName ne 'Doe')) and Age gt 10
 ```
 
-### Overrinding default Predicate or Filter behavior
+### Overriding default Predicate or Filter behavior
 It is sometime necessary to compare two properties or two values in a query.
 To do so, you can use the $odata.Value or $odata.Property classes
 ```javascript
@@ -121,14 +121,12 @@ var predicate = new $odata.Predicate(
 User.odata().filter(predicate).query();
 //Queries /user?$filter='Foo' eq 'Bar'
 ```
-Or we two properties : 
+Or with two properties : 
 ```javascript
-var predicate = new $odata.Predicate(
-                            new $odata.Property('Name'),
-                            new $odata.Property('Surname')
-                            );
-//
-User.odata().filter(predicate).query();
+User.odata().filter(
+                    new $odata.Property('Name'),
+                    new $odata.Property('Surname')
+                    ).query();
 //Queries /user?$filter=Name eq Surname
 ```
 
@@ -139,11 +137,14 @@ To do so, use the **$odata.Func** class.
 var users = User.odata()
 .filter(new $odata.Func("endswith","FullName","Doe"), true)
 .query();
-//Queries /user?$filter=endswith(Name eq 'Raphael') eq true
+//Queries /user?$filter=endswith(FullName eq 'Doe') eq true
 ```
 
 ####Definition
-$odata.Func(**MethodName**, **PropertyName**, **Value1**, **Value2**,...)
+
+new $odata.Func(**MethodName**, **PropertyName**, **Value1**, **Value2**,...)
+
+
 The parameters are assumed to be first, a property and then a value.
 This behavior can be overriden by specifying explicit values or properties : 
 ```javascript
@@ -188,8 +189,7 @@ decimal ceiling(decimal p0) | new $odata.Func('floor','Freight')  | 33
 bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.String') | true
 
 
-
-### Build from the soruce
+### Build from the source
 
 1. You need Grunt installed globally:
 ```sh
