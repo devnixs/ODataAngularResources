@@ -71,9 +71,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			return queryString;
 		};
 
-		ODataProvider.prototype.query = function() {
+		ODataProvider.prototype.query = function(success,error) {
 			if (angular.isFunction(this.callback))
-				return this.callback(this.execute());
+				return this.callback(this.execute(),success,error);
 		};
 
 		return ODataProvider;

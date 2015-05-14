@@ -1,3 +1,12 @@
+/* global it */
+/* global describe */
+/* global beforeEach */
+/* global inject */
+/* global module */
+/* global spyOn */
+/* global expect */
+/* global jasmine */
+
 (function() {
 	"use strict";
 	var $odata;
@@ -70,7 +79,7 @@
 			});
 			it('should throw if operator not defined', function() {
 				expect(function() {
-					var filter = new $odata.BinaryOperation("a", "abc", "c");
+					new $odata.BinaryOperation("a", "abc", "c");
 				}).toThrow();
 			});
 			it('should generate correct query with strings', function() {
@@ -130,12 +139,12 @@
 			describe('Method calls', function() {
 				it('should throw if no method name is specified', function() {
 					expect(function() {
-						var func = new $odata.Func("", 'prop');
+						new $odata.Func("", 'prop');
 					}).toThrow();
 				});
 				it('should throw if no params are specified', function() {
 					expect(function() {
-						var func = new $odata.Func("endswith");
+						new $odata.Func("endswith");
 					}).toThrow();
 				});
 				it('should allow implicit parameters', function() {
@@ -313,6 +322,17 @@
 					new $odata.BinaryOperation("Age", 23),
 				]);
 				expect(predicate.execute(true)).toBe("(Name eq 'Raphael') and (Age eq 23)");
+			});
+			it('should allow combining predicates with other predicates', function() {
+				var predicate = $odata.Predicate.and([
+					new $odata.BinaryOperation("Name", "Raphael"),
+					new $odata.BinaryOperation("Age", 23),
+				]);
+				var predicate2 = $odata.Predicate.or([
+					predicate,
+					new $odata.Predicate("Age", 25),
+				]);
+				expect(predicate2.execute(true)).toBe("((Name eq 'Raphael') and (Age eq 23)) or (Age eq 25)");
 			});
 			describe('.create', function() {
 				it('Generates a binary operator', function() {

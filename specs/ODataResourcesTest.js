@@ -84,18 +84,63 @@
 			});
 
 
+			it('filters should work with funcs', function() {
+				$httpBackend.expectGET("/user?$filter=endswith(Name eq 'Raphael') eq true").respond(200, [1, 2]);
+				var users = User.odata()
+				.filter(new $odata.Func("endswith","Name","el"), true)
+				.query();
+				$httpBackend.flush();
+
+				expect(1).toBe(1);
+			});
 
 			it('should work with complex queries', function() {
-				$httpBackend.expectGET("/user?$filter=(Name eq 'Raphael') and (Age gt 20)&$top=20&$skip=10").respond(200, [1, 2]);
+				$httpBackend.expectGET("/user?$filter=(Name eq 'Raphael') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10").respond(200, [1, 2]);
 				var users = User.odata()
 				.filter("Name", "Raphael")
 				.filter("Age",">",20)
 				.skip(10)
 				.take(20)
+				.orderBy("Name","desc")
 				.query();
 				$httpBackend.flush();
 
 				expect(1).toBe(1);
+			});
+
+
+
+			it('should call the callback on success', function() {
+				$httpBackend.expectGET("/user").respond(200, [1, 2]);
+
+				var success = jasmine.createSpy('success');
+				var error = jasmine.createSpy('error');
+
+				var users = User.odata()
+				.query(success,error);
+
+				$httpBackend.flush();
+
+				expect(success).toHaveBeenCalled();
+				expect(error).not.toHaveBeenCalled();
+				
+			});
+
+
+			it('should call the callback on error', function() {
+				$httpBackend.expectGET("/user").respond(500);
+
+				var success = jasmine.createSpy('success');
+				var error = jasmine.createSpy('error');
+
+				var users = User.odata()
+				.query(success,error);
+				
+				$httpBackend.flush();
+
+				expect(error).toHaveBeenCalled();
+				expect(success).not.toHaveBeenCalled();
+				
 			});
 
 		});

@@ -54,6 +54,7 @@ module.exports = function(grunt) {
           'build/odataresources.js'
         ],
         options: {
+          keepRunner:true,
           specs: 'specs/*.js',
           vendor : [
           'specs/dependencies/angular.js',
