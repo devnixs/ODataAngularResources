@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/devnixs/ODataAngularResources.svg?branch=master)](https://travis-ci.org/devnixs/ODataAngularResources)
-[![Coverage Status](https://coveralls.io/repos/devnixs/ODataAngularResources/badge.svg?branch=master)](https://coveralls.io/r/devnixs/ODataAngularResources?branch=master)
+[![Coverage Status](https://coveralls.io/repos/devnixs/ODataAngularResources/badge.svg?branch=master&15)](https://coveralls.io/r/devnixs/ODataAngularResources?branch=master)
 
 # ODataAngularResources
 
