@@ -98,6 +98,16 @@
 				var filter = new $odata.BinaryOperation("a", "=", 10);
 				expect(filter.execute()).toBe("(a eq 10)");
 			});
+			it('should throw if passed undefined as a first parameter', function() {
+				expect(function(){
+				var filter = new $odata.BinaryOperation(undefined, "=", 10);
+				}).toThrow();
+			});
+			it('should throw if passed undefined as a second parameter', function() {
+				expect(function(){
+				var filter = new $odata.BinaryOperation("a", undefined, 10);
+				}).toThrow();
+			});
 			describe('should generate correct query if both properties are specified', function() {
 				it('with explicit operator', function() {
 					var filter = new $odata.BinaryOperation(new $odata.Property("test"), "=", new $odata.Property("anothervalue"));
@@ -193,6 +203,19 @@
 			it('should encode strings', function() {
 				var value = new $odata.Value("'test");
 				expect(value.execute()).toBe("'''test'");
+			});
+			it('should work with true', function() {
+				var value = new $odata.Value(true);
+				expect(value.execute()).toBe("true");
+			});
+			it('should work with false', function() {
+				var value = new $odata.Value(false);
+				expect(value.execute()).toBe("false");
+			});
+			it('should throw if passed an unrecognized type', function() {
+				expect(function(){
+					console.log(new $odata.Value(function(){}).execute());
+				}).toThrow();
 			});
 		});
 		describe('Provider', function() {
@@ -331,6 +354,14 @@
 				expect(function() {
 					$odata.Predicate.and([]);
 				}).toThrow();
+			});
+			it('should allow instantiating from another predicate', function() {
+				var predicate1 = new $odata.BinaryOperation("a","b");
+				expect(new $odata.Predicate(predicate1)).toBe(predicate1);
+			});
+			it('should allow creating from another predicate', function() {
+				var predicate1 = new $odata.BinaryOperation("a","b");
+				expect($odata.Predicate.create(predicate1)).toBe(predicate1);
 			});
 			it('should generate and statements', function() {
 				var predicate = $odata.Predicate.and([
