@@ -639,6 +639,39 @@ function lookupDottedPath(obj, path) {
   });
 
 
+  it("should call callbacks on success", function() {
+    $httpBackend.expect('GET', '/CreditCard').respond([{id: 1}, {id: 2}]);
+
+    var spy1 = jasmine.createSpy("success");
+    var spy2 = jasmine.createSpy("error");
+
+    CreditCard.query(spy1, spy2);
+
+    $httpBackend.flush();
+    expect(spy1).toHaveBeenCalled();
+    expect(spy2).not.toHaveBeenCalled();
+  });
+  it("should call callbacks on error", function() {
+    $httpBackend.expect('GET', '/CreditCard').respond(500);
+
+    var spy1 = jasmine.createSpy("success");
+    var spy2 = jasmine.createSpy("error");
+
+    CreditCard.query(spy1, spy2);
+
+    $httpBackend.flush();
+    expect(spy2).toHaveBeenCalled();
+    expect(spy1).not.toHaveBeenCalled();
+  });
+
+    it("should throw if passed to much arguments", function() {
+    expect(function(){
+    CreditCard.query("a", "b","a", "b","a", "b","a", "b");
+    }).toThrow();
+  });
+
+
+
   it("should have all arguments optional", function() {
     $httpBackend.expect('GET', '/CreditCard').respond([{id:1}]);
 
