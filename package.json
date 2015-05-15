@@ -1,8 +1,8 @@
 {
   "name": "ODataResources",
   "version": "1.0.0",
-  "description": "Allows making OData queries from angular resources",
-  "main": "index.js",
+  "description": "Allows making fluent OData queries from angular resources",
+  "main": "",
   "scripts": {
     "test": "grunt test"
   },
