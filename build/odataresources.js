@@ -311,7 +311,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 		};
 
 		ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
-			if(operand1 ===undefined)
+			if (operand1 === undefined)
 				throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
 
 			var predicate;
@@ -371,9 +371,26 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			return queryString;
 		};
 
-		ODataProvider.prototype.query = function(success,error) {
-			if (angular.isFunction(this.callback))
-				return this.callback(this.execute(),success,error);
+		ODataProvider.prototype.query = function(success, error) {
+			if (!angular.isFunction(this.callback))
+				throw "Cannot execute query, no callback was specified";
+
+
+			success = success || angular.noop;
+			error = error || angular.noop;
+
+			return this.callback(this.execute(), success, error);
+		};
+
+
+		ODataProvider.prototype.get = function(data,success, error) {
+			if (!angular.isFunction(this.callback))
+				throw "Cannot execute get, no callback was specified";
+
+			success = success || angular.noop;
+			error = error || angular.noop;
+
+			return this.callback("("+data+")", success, error,true);
 		};
 
 		return ODataProvider;
@@ -455,6 +472,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
         },
         'delete': {
           method: 'DELETE'
+        },
+        'update': {
+          method: 'PUT'
         },
         'odata': {
           method: 'GET',
@@ -616,12 +636,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
 
-            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString) {
+            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement) {
               var params = {}, data, success, error;
 
               /* jshint -W086 */
               /* (purposefully fall through case statements) */
               switch (arguments.length) {
+                case 7:
                 case 6:
                 case 4:
                   error = a4;
@@ -661,7 +682,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
               /* (purposefully fall through case statements) */
 
               var isInstanceCall = this instanceof Resource;
-              var value = isInstanceCall ? data : (action.isArray ? [] : new Resource(data));
+              var value = isInstanceCall ? data : ((!isSingleElement && action.isArray) ? [] : new Resource(data));
               var httpConfig = {};
               var responseInterceptor = action.interceptor && action.interceptor.response ||
                 defaultResponseInterceptor;
@@ -680,8 +701,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 extend({}, extractParams(data, action.params || {}), params),
                 action.url);
 
-              if(isOdata && odataQueryString!==""){
-                httpConfig.url += "?"+odataQueryString;                
+              if (isOdata && odataQueryString !== "" && !isSingleElement) {
+                httpConfig.url += "?" + odataQueryString;
+              }
+              else if(isOdata && odataQueryString !== "" && isSingleElement){
+                httpConfig.url += odataQueryString;
               }
 
               var promise = $http(httpConfig).then(function(response) {
@@ -691,14 +715,14 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 if (data) {
                   // Need to convert action.isArray to boolean in case it is undefined
                   // jshint -W018
-                  if (angular.isArray(data) !== ( !! action.isArray)) {
+                  if (angular.isArray(data) !== ( !isSingleElement && !! action.isArray)) {
                     throw $resourceMinErr('badcfg',
                       'Error in resource configuration for action `{0}`. Expected response to ' +
-                      'contain an {1} but got an {2} (Request: {3} {4})', name, action.isArray ? 'array' : 'object',
+                      'contain an {1} but got an {2} (Request: {3} {4})', name,(!isSingleElement && action.isArray) ? 'array' : 'object',
                       angular.isArray(data) ? 'array' : 'object', httpConfig.method, httpConfig.url);
                   }
                   // jshint +W018
-                  if (action.isArray) {
+                  if (!isSingleElement && action.isArray) {
                     value.length = 0;
                     forEach(data, function(item) {
                       if (typeof item === "object") {
@@ -765,8 +789,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
           var oldOdataResource = Resource.odata;
           Resource.odata = function() {
-            var onQuery = function(queryString, success, error) {
-              return oldOdataResource({}, {}, success, error, true, queryString);
+            var onQuery = function(queryString, success, error, isSingleElement) {
+              return oldOdataResource({}, {}, success, error, true, queryString,isSingleElement);
             };
 
 

@@ -52,6 +52,22 @@ var myUsers =   User.odata()
                     }); 
 ```
 
+### Retrieving a single element
+* Simply call the get method with the entity key
+```javascript
+var userId = 10;
+var myUsers =   User.get(userId);
+```
+* You can also provide callbacks
+```javascript
+var userId = 10;
+var myUsers =   User.get(userId,
+                          function(){
+                            console.log("Everything went ok!")
+                        },function(){
+                            console.log("Oops, something wrong happened!")
+                        });
+```
 
 
 ###Query with top, orderBy and skip
@@ -73,14 +89,14 @@ var myUsers =   User.odata()
 ###Specifying a custom url and method
 * Want a custom url for your odata queries? easy! It works just like angular resources:
 ```javascript
-User = $odataresource(
-	'/user/:userId', {userId: '@id'},
-	 {
-		odata: {
-			method: 'POST',
-			url: '/myCustomUrl'
-		}
-	 }
+User = $odataresource('/user/:userId',
+                     { userId: '@id'},
+                	 {
+                		odata: {
+                			method: 'POST',
+                			url: '/myCustomUrl'
+                		}
+                	 }
 	);
 ```
 

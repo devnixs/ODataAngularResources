@@ -242,6 +242,19 @@
 						provider.filter(undefined);
 					}).toThrow();
 				});
+				it('should throw if called query with no callback', function() {
+					var provider = new $odata.Provider();
+					expect(function() {
+						provider.query();
+					}).toThrow();
+				});
+				it('should throw if called get with no callback', function() {
+					var provider = new $odata.Provider();
+					expect(function() {
+						provider.get(5);
+					}).toThrow();
+				});
+				
 			});
 			describe('Execute', function() {
 				it('should generate a query with one parameter', function() {

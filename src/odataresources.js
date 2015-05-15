@@ -76,6 +76,9 @@
         'delete': {
           method: 'DELETE'
         },
+        'update': {
+          method: 'PUT'
+        },
         'odata': {
           method: 'GET',
           isArray: true
@@ -236,12 +239,13 @@
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
 
-            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString) {
+            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement) {
               var params = {}, data, success, error;
 
               /* jshint -W086 */
               /* (purposefully fall through case statements) */
               switch (arguments.length) {
+                case 7:
                 case 6:
                 case 4:
                   error = a4;
@@ -281,7 +285,7 @@
               /* (purposefully fall through case statements) */
 
               var isInstanceCall = this instanceof Resource;
-              var value = isInstanceCall ? data : (action.isArray ? [] : new Resource(data));
+              var value = isInstanceCall ? data : ((!isSingleElement && action.isArray) ? [] : new Resource(data));
               var httpConfig = {};
               var responseInterceptor = action.interceptor && action.interceptor.response ||
                 defaultResponseInterceptor;
@@ -300,8 +304,11 @@
                 extend({}, extractParams(data, action.params || {}), params),
                 action.url);
 
-              if(isOdata && odataQueryString!==""){
-                httpConfig.url += "?"+odataQueryString;                
+              if (isOdata && odataQueryString !== "" && !isSingleElement) {
+                httpConfig.url += "?" + odataQueryString;
+              }
+              else if(isOdata && odataQueryString !== "" && isSingleElement){
+                httpConfig.url += odataQueryString;
               }
 
               var promise = $http(httpConfig).then(function(response) {
@@ -311,14 +318,14 @@
                 if (data) {
                   // Need to convert action.isArray to boolean in case it is undefined
                   // jshint -W018
-                  if (angular.isArray(data) !== ( !! action.isArray)) {
+                  if (angular.isArray(data) !== ( !isSingleElement && !! action.isArray)) {
                     throw $resourceMinErr('badcfg',
                       'Error in resource configuration for action `{0}`. Expected response to ' +
-                      'contain an {1} but got an {2} (Request: {3} {4})', name, action.isArray ? 'array' : 'object',
+                      'contain an {1} but got an {2} (Request: {3} {4})', name,(!isSingleElement && action.isArray) ? 'array' : 'object',
                       angular.isArray(data) ? 'array' : 'object', httpConfig.method, httpConfig.url);
                   }
                   // jshint +W018
-                  if (action.isArray) {
+                  if (!isSingleElement && action.isArray) {
                     value.length = 0;
                     forEach(data, function(item) {
                       if (typeof item === "object") {
@@ -385,8 +392,8 @@
 
           var oldOdataResource = Resource.odata;
           Resource.odata = function() {
-            var onQuery = function(queryString, success, error) {
-              return oldOdataResource({}, {}, success, error, true, queryString);
+            var onQuery = function(queryString, success, error, isSingleElement) {
+              return oldOdataResource({}, {}, success, error, true, queryString,isSingleElement);
             };
 
 

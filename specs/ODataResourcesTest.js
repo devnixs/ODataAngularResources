@@ -15,17 +15,19 @@
 	var $odataresource;
 	var $httpBackend;
 	var $odata;
+	var scope;
 
 	describe('ODataResources Service', function() {
 		beforeEach(module('ODataResources'));
 
 
 		beforeEach(function() {
-			inject(function(_$odataresource_, _$httpBackend_, _$odata_) {
+			inject(function(_$odataresource_, _$httpBackend_, _$odata_,$rootScope) {
 				$odataresource = _$odataresource_;
 				$httpBackend = _$httpBackend_;
 				$odata = _$odata_;
 				configureHttpBackend($httpBackend);
+				scope = $rootScope;
 			});
 		});
 
@@ -162,10 +164,109 @@
 
 				User.odata().query();
 				$httpBackend.flush();
+				expect(1).toBe(1);
 			});
 		});
 
+		describe('get method', function() {
+			it('should allow querying only one element', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
 
+				$httpBackend.expectGET("/user(2)").respond(200);
+				var user = User.odata().get(2);
+				expect(user).toBeDefined();
+			});
+
+			it('should return an object', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+
+				$httpBackend.expectGET("/user(2)").respond(200);
+				var user = User.odata().get(2);
+				expect(user.length).toBe(undefined);
+				expect(user).toBeDefined();
+			});
+
+
+			it('should work with multiple queries', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+
+				$httpBackend.expectGET("/user(2)").respond(200);
+				var user = User.odata().get(2);
+				$httpBackend.expectGET("/user").respond(200);
+				var users = User.odata().query();
+				$httpBackend.flush();
+
+				expect(users.length).toBeDefined();
+			});
+
+
+			it('should throw if server returns an array', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+
+				$httpBackend.expectGET("/user(2)").respond([]);
+				var user = User.odata().get(2);
+				expect(function(){
+					$httpBackend.flush();
+				}).toThrow();
+				//Force ending the digest cycle
+				scope.$$phase = undefined;
+			});
+
+			it('should call the callbacks on success', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+				var success = jasmine.createSpy('success');
+				var error = jasmine.createSpy('error');
+
+				$httpBackend.expectGET("/user(2)").respond({});
+				User.odata()
+					.get(2,success, error);
+
+				$httpBackend.flush();
+
+				expect(success).toHaveBeenCalled();
+				expect(error).not.toHaveBeenCalled();
+			});
+
+			it('should call the callbacks on error', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+				var success = jasmine.createSpy('success');
+				var error = jasmine.createSpy('error');
+
+				$httpBackend.expectGET("/user(2)").respond(500);
+				User.odata()
+					.get(2,success, error);
+
+				$httpBackend.flush();
+
+				expect(error).toHaveBeenCalled();
+				expect(success).not.toHaveBeenCalled();
+			});
+
+
+			it('should convert the element in a resource', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+
+				$httpBackend.expectGET("/user(2)").respond({Name:"John"});
+				var user = User.odata().get(2);
+				$httpBackend.flush();
+				expect(user.$save).toBeDefined();
+			});
+
+		});
 	});
 
 })();

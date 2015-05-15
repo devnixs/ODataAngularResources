@@ -3,6 +3,25 @@ module.exports = function(grunt) {
   // Project configuration.
   grunt.initConfig({
     pkg: grunt.file.readJSON('package.json'),
+    watch: {
+      options: {
+        livereload: true,
+        debounceDelay: 10,
+        spawn: false,
+      },
+      src: {
+        files: [
+          'src/*.js',
+        ],
+        tasks: ['build']
+      },
+      tests: {
+        files: [
+          'specs/**/*.js',
+        ],
+        tasks: []
+      }
+    },
     jshint: {
       options: {
         jshintrc: '.jshintrc',
@@ -120,10 +139,11 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
+  grunt.loadNpmTasks('grunt-contrib-watch');
 
   grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'jasmine:pivotal']);
   grunt.registerTask('build', ['concat', 'uglify']);
   grunt.registerTask('test', ['jshint', 'jasmine:pivotal']);
-  grunt.registerTask('testandcover', ['jshint', 'jasmine:cover','coveralls']);
+  grunt.registerTask('testandcover', ['jshint', 'jasmine:cover', 'coveralls']);
 
 };

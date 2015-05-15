@@ -11,7 +11,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 		};
 
 		ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
-			if(operand1 ===undefined)
+			if (operand1 === undefined)
 				throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
 
 			var predicate;
@@ -71,9 +71,26 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			return queryString;
 		};
 
-		ODataProvider.prototype.query = function(success,error) {
-			if (angular.isFunction(this.callback))
-				return this.callback(this.execute(),success,error);
+		ODataProvider.prototype.query = function(success, error) {
+			if (!angular.isFunction(this.callback))
+				throw "Cannot execute query, no callback was specified";
+
+
+			success = success || angular.noop;
+			error = error || angular.noop;
+
+			return this.callback(this.execute(), success, error);
+		};
+
+
+		ODataProvider.prototype.get = function(data,success, error) {
+			if (!angular.isFunction(this.callback))
+				throw "Cannot execute get, no callback was specified";
+
+			success = success || angular.noop;
+			error = error || angular.noop;
+
+			return this.callback("("+data+")", success, error,true);
 		};
 
 		return ODataProvider;
