@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/devnixs/ODataAngularResources.svg?branch=master)](https://travis-ci.org/devnixs/ODataAngularResources)
+
 # ODataAngularResources
 
 ODataAngularResources is a fork of Angular's $resource that allows to make OData queries in a fluent way.
