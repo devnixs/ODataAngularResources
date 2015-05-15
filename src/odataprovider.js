@@ -41,6 +41,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
 		ODataProvider.prototype.execute = function() {
 			var queryString = '';
+			var i;
 			if (this.filters.length > 0) {
 				queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
 			}
@@ -49,7 +50,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 				if (queryString !== "") queryString += "&";
 
 				queryString += "$orderby=";
-				for (var i = 0; i < this.sortOrders.length; i++) {
+				for (i = 0; i < this.sortOrders.length; i++) {
 					if (i > 0) {
 						queryString += ",";
 					}
@@ -73,7 +74,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 				if (queryString !== "") queryString += "&";
 
 				queryString += "$expand=";
-				for (var i = 0; i < this.expandables.length; i++) {
+				for (i = 0; i < this.expandables.length; i++) {
 					if (i > 0) {
 						queryString += ",";
 					}
