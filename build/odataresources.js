@@ -308,6 +308,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			this.sortOrders = [];
 			this.takeAmount = undefined;
 			this.skipAmount = undefined;
+			this.expandables = [];
 		};
 
 		ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
@@ -368,6 +369,18 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			}
 
 
+			if (this.expandables.length > 0) {
+				if (queryString !== "") queryString += "&";
+
+				queryString += "$expand=";
+				for (var i = 0; i < this.expandables.length; i++) {
+					if (i > 0) {
+						queryString += ",";
+					}
+					queryString += this.expandables[i];
+				}
+			}
+
 			return queryString;
 		};
 
@@ -391,6 +404,30 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			error = error || angular.noop;
 
 			return this.callback("("+data+")", success, error,true);
+		};
+
+		ODataProvider.prototype.expand = function(params) {
+			if(!angular.isString(params) && !angular.isArray(params)){
+				throw "Invalid parameter passed to expand method ("+params+")";
+			}
+			if(params===""){
+				return;
+			}
+
+			var expandQuery = params;
+			if(angular.isArray(params)){
+				expandQuery = params.join('/');
+			}else{
+				expandQuery = Array.prototype.slice.call(arguments).join('/');
+			}
+
+			for (var i = 0; i < this.expandables.length; i++) {
+				if(this.expandables[i]===expandQuery)
+					return this;
+			}
+
+			this.expandables.push(expandQuery);
+			return this;
 		};
 
 		return ODataProvider;

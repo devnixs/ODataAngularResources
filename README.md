@@ -8,7 +8,7 @@ It does everything Angular Resources does but add some features:
 
   - Fluent API
   - Generate proper OData queries without worrying about escaping the right characters
-  - Allows filtering, skipping, ordering, and selecting only N elements (with top)
+  - Allows filtering, skipping, ordering, expanding, and selecting only N elements (with top)
   - Able to generate complex queries with OR, AND and method calls
 
 ##How to install
@@ -70,7 +70,6 @@ var myUsers =   User.odata().get(userId,
                         });
 ```
 
-
 ###Query with top, orderBy and skip
 ```javascript
 var User = $odataresource('/user/:userId', {userId:'@id'});
@@ -86,6 +85,38 @@ var myUsers =   User.odata()
 ```
 - Multiple chained filters are executed with **and** between.
 - orderBy assumes the order to be asc if the second parameter is not specified.
+
+###Including related models (expanding)
+* You can easily include related models by calling the expand method
+```javascript
+var User = $odataresource('/user/:userId', {userId:'@id'});
+var myUsers =   User.odata()
+                    .expand("City")
+                    .query();
+                    
+//Queries /user?$expand=City
+```
+* You can also expand nested related models like the Country of the City of the User
+```javascript
+var User = $odataresource('/user/:userId', {userId:'@id'});
+var myUsers =   User.odata()
+                    .expand("City","Country")
+                    .query();
+                    
+//Queries /user?$expand=City/Country
+```
+
+* You can also include multiple related models into your query
+
+```javascript
+var User = $odataresource('/user/:userId', {userId:'@id'});
+var myUsers =   User.odata()
+                    .expand("City")
+                    .expand("Orders")
+                    .query();
+                    
+//Queries /user?$expand=City,Orders
+```
 
 ###Specifying a custom url and method
 * Want a custom url for your odata queries? easy! It works just like angular resources:

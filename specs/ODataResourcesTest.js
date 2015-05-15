@@ -22,7 +22,7 @@
 
 
 		beforeEach(function() {
-			inject(function(_$odataresource_, _$httpBackend_, _$odata_,$rootScope) {
+			inject(function(_$odataresource_, _$httpBackend_, _$odata_, $rootScope) {
 				$odataresource = _$odataresource_;
 				$httpBackend = _$httpBackend_;
 				$odata = _$odata_;
@@ -55,7 +55,7 @@
 			it('should return an array', function() {
 				$httpBackend.expectGET('/user').respond(200, [1, 2]);
 				var users = User.odata().query();
-				expect(users.length).toBeDefined();
+				expect(angular.isArray(users)).toBeTruthy();
 			});
 
 
@@ -142,6 +142,20 @@
 			});
 
 
+			it('should query with expand', function() {
+				$httpBackend.expectGET("/user?$expand=City/Country,Orders").respond(200, [1, 2]);
+				User.odata()
+					.expand("City","Country")
+					.expand("Orders")
+					.query();
+
+				$httpBackend.flush();
+
+				expect(1).toBe(1);
+
+			});
+
+
 		});
 
 		describe('Resource with customized url', function() {
@@ -156,7 +170,7 @@
 							url: '/myCustomUrl'
 						}
 					}
-					);
+				);
 			});
 
 			it('should call the right url', function() {
@@ -186,7 +200,7 @@
 
 				$httpBackend.expectGET("/user(2)").respond(200);
 				var user = User.odata().get(2);
-				expect(user.length).toBe(undefined);
+				expect(angular.isArray(user)).toBe(false);
 				expect(user).toBeDefined();
 			});
 
@@ -202,7 +216,7 @@
 				var users = User.odata().query();
 				$httpBackend.flush();
 
-				expect(users.length).toBeDefined();
+				expect(angular.isArray(users)).toBeTruthy();
 			});
 
 
@@ -213,7 +227,7 @@
 
 				$httpBackend.expectGET("/user(2)").respond([]);
 				var user = User.odata().get(2);
-				expect(function(){
+				expect(function() {
 					$httpBackend.flush();
 				}).toThrow();
 				//Force ending the digest cycle
@@ -229,7 +243,7 @@
 
 				$httpBackend.expectGET("/user(2)").respond({});
 				User.odata()
-					.get(2,success, error);
+					.get(2, success, error);
 
 				$httpBackend.flush();
 
@@ -246,7 +260,7 @@
 
 				$httpBackend.expectGET("/user(2)").respond(500);
 				User.odata()
-					.get(2,success, error);
+					.get(2, success, error);
 
 				$httpBackend.flush();
 
@@ -260,13 +274,16 @@
 					userId: '@id'
 				});
 
-				$httpBackend.expectGET("/user(2)").respond({Name:"John"});
+				$httpBackend.expectGET("/user(2)").respond({
+					Name: "John"
+				});
 				var user = User.odata().get(2);
 				$httpBackend.flush();
 				expect(user.$save).toBeDefined();
 			});
 
 		});
+
 	});
 
 })();

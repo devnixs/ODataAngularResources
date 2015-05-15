@@ -254,7 +254,7 @@
 						provider.get(5);
 					}).toThrow();
 				});
-				
+
 			});
 			describe('Execute', function() {
 				it('should generate a query with one parameter', function() {
@@ -447,6 +447,87 @@
 				provider.filter(finalPredicate);
 				expect(provider.execute(true)).toBe("$filter=(((Name eq 'Raphael') and (Age eq 23)) or ((Name eq 'Anais') and (Age gt 20))) and (substringof('Spider',CompanyName) eq true)");
 			});
+		describe('Expand', function() {
+			var provider;
+			beforeEach(function() {
+				provider = new  $odata.Provider();
+			});
+
+			it('should be a function', function() {
+				expect(angular.isFunction(provider.expand)).toBeTruthy();
+			});
+
+			it('should add to the list of expandables', function() {
+				var query = provider;
+				query.expand("City");
+				expect(query.expandables.length).toBe(1);
+			});
+		
+			it('should be chainable', function() {
+				var query = provider;
+				query.expand("City")
+				.expand("City");
+				expect(1).toBe(1);
+			});
+
+			it('should not add twice', function() {
+				var query = provider;
+				query.expand("City")
+				.expand("City");
+				expect(query.expandables.length).toBe(1);
+			});
+
+			it('should allow passing multiple parameters', function() {
+				var query = provider;
+				query.expand("City","Country");
+				
+				expect(query.expandables[0]).toBe("City/Country");
+			});
+
+			it('should allow passing an array', function() {
+				var query = provider;
+				query.expand(["City","Country"]);
+				
+				expect(query.expandables[0]).toBe("City/Country");
+			});
+
+
+			it('should throw if passed object', function() {
+				var query = provider;
+				
+				expect(function(){
+					query.expand({});
+				}).toThrow();
+			});
+
+			it('should not do anything if passed empty string', function() {
+				var query = provider;
+				
+				query.expand("");
+				expect(query.expandables.length).toBe(0);
+			});
+
+
+			it('should execute with one expand', function() {
+				var query = provider;
+				
+				query.expand("City");
+				expect(query.execute()).toBe("$expand=City");
+			});
+			it('should execute with 2 expands', function() {
+				var query = provider;
+				
+				query.expand("City");
+				query.expand("Country");
+				expect(query.execute()).toBe("$expand=City,Country");
+			});
+			it('should execute with nested expands', function() {
+				var query = provider;
+				
+				query.expand("City","Country");
+				expect(query.execute()).toBe("$expand=City/Country");
+			});
+		});
 		});
 	});
 })();
