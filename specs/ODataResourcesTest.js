@@ -1,3 +1,5 @@
+//This file is meant to test the actual ODataResource
+
 (function() {
 	"use strict";
 

@@ -7,8 +7,12 @@
 /* global expect */
 /* global jasmine */
 
+//This file tests the feature of the core library
+
 (function() {
 	"use strict";
+
+
 	var $odata;
 	describe('OData', function() {
 		beforeEach(module('ODataResources'));
@@ -17,6 +21,8 @@
 				$odata = _$odata_;
 			});
 		});
+
+
 		describe('OrderBy', function() {
 			it('should throw if passed undefined', function() {
 				expect(function() {
@@ -209,7 +215,7 @@
 				});
 				it('should throw if passed undefined', function() {
 					var provider = new $odata.Provider();
-					expect(function(){
+					expect(function() {
 						provider.filter(undefined);
 					}).toThrow();
 				});
@@ -223,7 +229,7 @@
 			});
 			describe('Query', function() {
 				it('should call execute', function() {
-					var provider = new $odata.Provider(function(){});
+					var provider = new $odata.Provider(function() {});
 					spyOn(provider, 'execute');
 					provider.query();
 					expect(provider.execute).toHaveBeenCalled();
@@ -316,6 +322,16 @@
 				]);
 				expect(predicate.execute(true)).toBe("(Name eq 'Raphael') or (Age eq 23)");
 			});
+			it('should throw if passed empty array', function() {
+				expect(function() {
+					$odata.Predicate.or([]);
+				}).toThrow();
+			});
+			it('should throw if passed empty array', function() {
+				expect(function() {
+					$odata.Predicate.and([]);
+				}).toThrow();
+			});
 			it('should generate and statements', function() {
 				var predicate = $odata.Predicate.and([
 					new $odata.BinaryOperation("Name", "Raphael"),
@@ -348,6 +364,11 @@
 				it('Should allow or chaining with unexplicit operation', function() {
 					var predicate = $odata.Predicate.create("A", "=", "b").or("Name", 'test');
 					expect(predicate.execute(true)).toBe("(A eq 'b') or (Name eq 'test')");
+				});
+				it('Should throw if passed an array', function() {
+					expect(function() {
+						var predicate = $odata.Predicate.create("A", "=", "b").or([new $odata.BinaryOperation("Name", "eq", 'test')]);
+					}).toThrow();
 				});
 			});
 			describe('.and', function() {

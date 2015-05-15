@@ -1,5 +1,7 @@
 'use strict';
 
+//This tests the features of the regular angular resource, to be sure we didn't break anything
+
 describe("resource", function() {
 
  var $resourceMinErr = angular.$$minErr('$resource');

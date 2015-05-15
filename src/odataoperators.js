@@ -1,14 +1,13 @@
-if (!String.prototype.trim) {
-  (function() {
-    var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-    String.prototype.trim = function() {
-      return this.replace(rtrim, '');
-    };
-  })();
-}
+
 
 angular.module('ODataResources').
   factory('$odataOperators', [function() {
+
+      var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+      trim = function(value) {
+        return value.replace(rtrim, '');
+      };
+        
 
   		var filterOperators =  {
   			'eq':['=','==','==='],
@@ -28,7 +27,7 @@ angular.module('ODataResources').
   		};
 
   		var convertOperator = function(from){
-  			var input = from.trim().toLowerCase();
+  			var input = trim(from).toLowerCase();
   			var key;
   			for(key in filterOperators)
   			{
