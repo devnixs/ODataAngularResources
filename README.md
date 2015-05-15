@@ -56,12 +56,13 @@ var myUsers =   User.odata()
 * Simply call the get method with the entity key
 ```javascript
 var userId = 10;
-var myUsers =   User.get(userId);
+var myUsers =   User.odata().get(userId);
+//Queries /user(10)
 ```
 * You can also provide callbacks
 ```javascript
 var userId = 10;
-var myUsers =   User.get(userId,
+var myUsers =   User.odata().get(userId,
                           function(){
                             console.log("Everything went ok!")
                         },function(){
