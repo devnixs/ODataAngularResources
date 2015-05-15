@@ -65,11 +65,24 @@ var myUsers =   User.odata()
     				.orderBy("Name","desc")
     				.query();
                     
-//Queries /user?$filter=(Name eq 'Raphael') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10
+//Queries /user?$filter=(Name eq 'John') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10
 ```
 - Multiple chained filters are executed with **and** between.
 - orderBy assumes the order to be asc if the second parameter is not specified.
 
+###Specifying a custom url and method
+* Want a custom url for your odata queries? easy! It works just like angular resources:
+```javascript
+User = $odataresource(
+	'/user/:userId', {userId: '@id'},
+	 {
+		odata: {
+			method: 'POST',
+			url: '/myCustomUrl'
+		}
+	 }
+	);
+```
 
 ##Advanced queries
 

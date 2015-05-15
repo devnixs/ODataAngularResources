@@ -1,3 +1,12 @@
+/* global it */
+/* global describe */
+/* global beforeEach */
+/* global inject */
+/* global module */
+/* global spyOn */
+/* global expect */
+/* global jasmine */
+
 'use strict';
 
 //This tests the features of the regular angular resource, to be sure we didn't break anything

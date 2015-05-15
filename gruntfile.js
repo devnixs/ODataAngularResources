@@ -66,7 +66,7 @@ module.exports = function(grunt) {
       },
     },
     jasmine: {
-      pivotal: {
+      cover: {
         src: [
           'build/odataresources.js'
         ],
@@ -96,6 +96,21 @@ module.exports = function(grunt) {
             }
           }
         }
+      },
+      pivotal: {
+        src: [
+          'build/odataresources.js'
+        ],
+        options: {
+          keepRunner: true,
+          specs: 'specs/*.js',
+          vendor: [
+            'specs/dependencies/angular.js',
+            'specs/dependencies/angular-mocks.js',
+            'specs/dependencies/matchers.js',
+            'specs/dependencies/configuration.js',
+          ]
+        }
       }
     },
   });
@@ -106,9 +121,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
 
-  grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'jasmine']);
+  grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'jasmine:pivotal']);
   grunt.registerTask('build', ['concat', 'uglify']);
-  grunt.registerTask('test', ['jshint', 'jasmine']);
-  grunt.registerTask('testandcover', ['jshint', 'jasmine','coveralls']);
+  grunt.registerTask('test', ['jshint', 'jasmine:pivotal']);
+  grunt.registerTask('testandcover', ['jshint', 'jasmine:cover','coveralls']);
 
 };

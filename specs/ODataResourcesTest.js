@@ -1,3 +1,12 @@
+/* global it */
+/* global describe */
+/* global beforeEach */
+/* global inject */
+/* global module */
+/* global expect */
+/* global jasmine */
+/* global afterEach */
+
 //This file is meant to test the actual ODataResource
 
 (function() {
@@ -50,7 +59,7 @@
 
 			it('should make an http call', function() {
 				$httpBackend.expectGET('/user').respond(200, [1, 2]);
-				var users = User.odata().query();
+				User.odata().query();
 				$httpBackend.flush();
 				expect(1).toBe(1);
 			});
@@ -64,21 +73,25 @@
 
 			it('should append odata query with a ?', function() {
 				$httpBackend.expectGET("/user?$filter=Name eq 'Raphael'").respond(200, [1, 2]);
-				var users = User.odata().filter("Name", "Raphael").query();
+				User.odata().filter("Name", "Raphael").query();
 				$httpBackend.flush();
 				expect(1).toBe(1);
 			});
 
 			it('The results should be arrays', function() {
 				$httpBackend.expectGET("/user?$filter=Name eq 'Raphael'").respond(200, [1, 2]);
-				var users = User.odata().filter("Name", "Raphael").query();
+				User.odata().filter("Name", "Raphael").query();
 				$httpBackend.flush();
 				expect(1).toBe(1);
 			});
 
 
 			it('The results should be Resources', function() {
-				$httpBackend.expectGET("/user?$filter=Name eq 'Raphael'").respond(200, [{Name:"Raphael"}, {Name:"Anais"}]);
+				$httpBackend.expectGET("/user?$filter=Name eq 'Raphael'").respond(200, [{
+					Name: "Raphael"
+				}, {
+					Name: "Anais"
+				}]);
 				var users = User.odata().filter("Name", "Raphael").query();
 				$httpBackend.flush();
 				expect(users[0].$save).toBeDefined();
@@ -87,9 +100,9 @@
 
 			it('filters should work with funcs', function() {
 				$httpBackend.expectGET("/user?$filter=endswith(Name,'Raphael') eq true").respond(200, [1, 2]);
-				var users = User.odata()
-				.filter(new $odata.Func("endswith","Name","Raphael"), true)
-				.query();
+				User.odata()
+					.filter(new $odata.Func("endswith", "Name", "Raphael"), true)
+					.query();
 				$httpBackend.flush();
 
 				expect(1).toBe(1);
@@ -97,18 +110,17 @@
 
 			it('should work with complex queries', function() {
 				$httpBackend.expectGET("/user?$filter=(Name eq 'Raphael') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10").respond(200, [1, 2]);
-				var users = User.odata()
-				.filter("Name", "Raphael")
-				.filter("Age",">",20)
-				.skip(10)
-				.take(20)
-				.orderBy("Name","desc")
-				.query();
+				User.odata()
+					.filter("Name", "Raphael")
+					.filter("Age", ">", 20)
+					.skip(10)
+					.take(20)
+					.orderBy("Name", "desc")
+					.query();
 				$httpBackend.flush();
 
 				expect(1).toBe(1);
 			});
-
 
 
 			it('should call the callback on success', function() {
@@ -117,35 +129,41 @@
 				var success = jasmine.createSpy('success');
 				var error = jasmine.createSpy('error');
 
-				var users = User.odata()
-				.query(success,error);
+				User.odata()
+					.query(success, error);
 
 				$httpBackend.flush();
 
 				expect(success).toHaveBeenCalled();
 				expect(error).not.toHaveBeenCalled();
-				
+
 			});
 
-
-			it('should call the callback on error', function() {
-				$httpBackend.expectGET("/user").respond(500);
-
-				var success = jasmine.createSpy('success');
-				var error = jasmine.createSpy('error');
-
-				var users = User.odata()
-				.query(success,error);
-				
-				$httpBackend.flush();
-
-				expect(error).toHaveBeenCalled();
-				expect(success).not.toHaveBeenCalled();
-				
-			});
 
 		});
 
+		describe('Resource with customized url', function() {
+			var User;
+			beforeEach(function() {
+				User = $odataresource(
+					'/user/:userId', {
+						userId: '@id'
+					}, {
+						odata: {
+							method: 'POST',
+							url: '/myCustomUrl'
+						}
+					}
+					);
+			});
+
+			it('should call the right url', function() {
+				$httpBackend.expectPOST("/myCustomUrl").respond(200);
+
+				User.odata().query();
+				$httpBackend.flush();
+			});
+		});
 
 
 	});
