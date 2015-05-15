@@ -9,7 +9,7 @@ module.exports = function(grunt) {
       },
       all: {
         src: [
-           "src/*.js"
+          "src/*.js"
         ]
       },
       test: {
@@ -24,17 +24,17 @@ module.exports = function(grunt) {
       },
       app: {
         src: [
-           "src/app.js",
-           "src/odataoperators.js",
-           "src/odatavalue.js",
-           "src/odataproperty.js",
-           "src/odatabinaryoperation.js",
-           "src/odatamethodcall.js",
-           "src/odataorderbystatement.js",
-           "src/odatapredicate.js",
-           "src/odataprovider.js",
-           "src/odataresources.js",
-           "src/odata.js",
+          "src/app.js",
+          "src/odataoperators.js",
+          "src/odatavalue.js",
+          "src/odataproperty.js",
+          "src/odatabinaryoperation.js",
+          "src/odatamethodcall.js",
+          "src/odataorderbystatement.js",
+          "src/odatapredicate.js",
+          "src/odataprovider.js",
+          "src/odataresources.js",
+          "src/odata.js",
         ],
         dest: 'build/odataresources.js'
       }
@@ -48,34 +48,67 @@ module.exports = function(grunt) {
         dest: 'build/odataresources.min.js'
       }
     },
+    coveralls: {
+      // Options relevant to all targets
+      options: {
+        // When true, grunt-coveralls will only print a warning rather than
+        // an error, to prevent CI builds from failing unnecessarily (e.g. if
+        // coveralls.io is down). Optional, defaults to false.
+        force: false
+      },
+
+      your_target: {
+        // LCOV coverage file (can be string, glob or array)
+        src: 'coverage/lcov.info',
+        options: {
+          // Any options for just this target
+        }
+      },
+    },
     jasmine: {
       pivotal: {
         src: [
           'build/odataresources.js'
         ],
         options: {
-          keepRunner:true,
+          keepRunner: true,
           specs: 'specs/*.js',
-          vendor : [
-          'specs/dependencies/angular.js',
-          'specs/dependencies/angular-mocks.js',
-          'specs/dependencies/matchers.js',
-          'specs/dependencies/configuration.js',
+          vendor: [
+            'specs/dependencies/angular.js',
+            'specs/dependencies/angular-mocks.js',
+            'specs/dependencies/matchers.js',
+            'specs/dependencies/configuration.js',
           ],
+          template: require('grunt-template-jasmine-istanbul'),
+          templateOptions: {
+            coverage: 'coverage/coverage.json',
+            thresholds: {
+              lines: 75,
+              statements: 75,
+              branches: 75,
+              functions: 90
+            },
+            report: {
+              type: 'lcov',
+              options: {
+                dir: 'coverage/'
+              }
+            }
+          }
         }
       }
     },
   });
 
-  // Load the plugin that provides the "uglify" task.
+  grunt.loadNpmTasks('grunt-coveralls');
   grunt.loadNpmTasks('grunt-contrib-uglify');
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-concat');
   grunt.loadNpmTasks('grunt-contrib-jasmine');
 
-  // Default task(s).
-  grunt.registerTask('default', ['jshint', 'concat', 'uglify','jasmine']);
+  grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'jasmine']);
   grunt.registerTask('build', ['concat', 'uglify']);
   grunt.registerTask('test', ['jshint', 'jasmine']);
+  grunt.registerTask('testandcover', ['jshint', 'jasmine','coveralls']);
 
 };
