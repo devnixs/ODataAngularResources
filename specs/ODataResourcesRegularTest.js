@@ -1549,6 +1549,24 @@ function lookupDottedPath(obj, path) {
       $httpBackend.flush();
       expect(item).toEqualData({id: 'abc'});
     });
+
+    it('should throw if passed hasOwnProperty as a segment of the url', function() {
+      expect(function(){
+        $resource('/foo/hasOwnProperty').query();
+      }).toThrow();
+    });
+
+    it('should throw if passed hasOwnProperty as a template url', function() {
+      expect(function(){
+        $resource('/foo/:a',{a:"@hasOwnProperty"}).query();
+      }).toThrow();
+    });
+
+    it('should throw if passed null', function() {
+      expect(function(){
+        $resource(null).query();
+      }).toThrow();
+    });
   });
 });
 

@@ -156,7 +156,7 @@
             if (self.defaults.stripTrailingSlashes) {
               url = url.replace(/\/+$/, '') || '/';
             }
-            
+
               url = url + '(:' + self.defaults.odatakey + ')';
 
               if (data) {
@@ -346,10 +346,6 @@
                   var fullObject = data;
                   data = data.value;
                   for (var property in fullObject) {
-                    if (!fullObject.hasOwnProperty(property)) {
-                      continue;
-                    }
-
                     if (property !== "value") {
                       value[property] = fullObject[property];
 

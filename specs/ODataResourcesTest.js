@@ -155,6 +155,19 @@
 
 			});
 
+			it('should query with expand and filters', function() {
+				$httpBackend.expectGET("/user?$filter=City eq 'France'&$expand=Orders").respond(200, [1, 2]);
+				User.odata()
+					.filter("City", "France")
+					.expand("Orders")
+					.query();
+
+				$httpBackend.flush();
+
+				expect(1).toBe(1);
+
+			});
+
 
 		});
 
@@ -431,6 +444,34 @@
 
 				$httpBackend.expectPOST("/user").respond(200);
 				result[0].$save();
+				$httpBackend.flush();
+
+				expect(result.count).toBe(10);
+
+			});
+
+
+			it('should call the default endpoint on $update if no id is specified', function() {
+				User = $odataresource('/user/');
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+
+				$httpBackend.expectPUT("/user").respond(200);
+				result[0].$update();
 				$httpBackend.flush();
 
 				expect(result.count).toBe(10);
