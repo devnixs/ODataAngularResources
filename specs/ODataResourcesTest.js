@@ -145,7 +145,7 @@
 			it('should query with expand', function() {
 				$httpBackend.expectGET("/user?$expand=City/Country,Orders").respond(200, [1, 2]);
 				User.odata()
-					.expand("City","Country")
+					.expand("City", "Country")
 					.expand("Orders")
 					.query();
 
@@ -282,6 +282,160 @@
 				expect(user.$save).toBeDefined();
 			});
 
+		});
+
+		describe('OData v4', function() {
+			var User;
+			beforeEach(function() {});
+
+			it('should still returns an array', function() {
+				User = $odataresource('/user/', {});
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+				expect(angular.isArray(result)).toBeTruthy();
+			});
+
+			it('should copy the properties to the array', function() {
+				User = $odataresource('/user/', {});
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+				console.log(result);
+				expect(result.count).toBe(10);
+			});
+
+			it('should call the odata endpoint on $update', function() {
+				User = $odataresource('/user', 'id');
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+
+				$httpBackend.expectPUT("/user(1)").respond(200);
+				result[0].$update();
+				$httpBackend.flush();
+				expect(result.count).toBe(10);
+			});
+
+
+			it('should work with key specified in options', function() {
+				User = $odataresource('/user', {},{},{odatakey : 'id'});
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+
+				$httpBackend.expectPUT("/user(1)").respond(200);
+				result[0].$update();
+				$httpBackend.flush();
+				console.log(result);
+				expect(result.count).toBe(10);
+			});
+
+			it('should call the odata endpoint on $update with trailing slashes', function() {
+				User = $odataresource('/user/', 'id');
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+
+				$httpBackend.expectPUT("/user(1)").respond(200);
+				result[0].$update();
+				$httpBackend.flush();
+
+				expect(result.count).toBe(10);
+
+			});
+
+			it('should call the default endpoint on $save', function() {
+				User = $odataresource('/user/', 'id');
+				$httpBackend.expectGET("/user").respond(200, {
+					"@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+					"value": [{
+						name: 'Test',
+						id: 1,
+					}, {
+						name: 'Foo',
+						id: 2,
+					}, {
+						name: 'Bar',
+						id: 3,
+					}],
+					'count': 10
+				});
+				var result = User.odata().query();
+				$httpBackend.flush();
+
+				$httpBackend.expectPOST("/user").respond(200);
+				result[0].$save();
+				$httpBackend.flush();
+
+				expect(result.count).toBe(10);
+
+			});
 		});
 
 	});

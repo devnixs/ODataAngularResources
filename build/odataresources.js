@@ -341,6 +341,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
 		ODataProvider.prototype.execute = function() {
 			var queryString = '';
+			var i;
 			if (this.filters.length > 0) {
 				queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
 			}
@@ -349,7 +350,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 				if (queryString !== "") queryString += "&";
 
 				queryString += "$orderby=";
-				for (var i = 0; i < this.sortOrders.length; i++) {
+				for (i = 0; i < this.sortOrders.length; i++) {
 					if (i > 0) {
 						queryString += ",";
 					}
@@ -373,7 +374,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 				if (queryString !== "") queryString += "&";
 
 				queryString += "$expand=";
-				for (var i = 0; i < this.expandables.length; i++) {
+				for (i = 0; i < this.expandables.length; i++) {
 					if (i > 0) {
 						queryString += ",";
 					}
@@ -575,11 +576,28 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
         }
 
         Route.prototype = {
-          setUrlParams: function(config, params, actionUrl) {
+          setUrlParams: function(config, params, actionUrl, data, isOData) {
             var self = this,
               url = actionUrl || self.template,
               val,
               encodedVal;
+
+
+
+            if (url === self.template &&
+              (config.method === 'PUT' || (config.method == 'GET' && !isOData) || config.method == 'PATCH') && angular.isString(self.defaults.odatakey)) {
+              
+            // strip trailing slashes and set the url (unless this behavior is specifically disabled)
+            if (self.defaults.stripTrailingSlashes) {
+              url = url.replace(/\/+$/, '') || '/';
+            }
+            
+              url = url + '(:' + self.defaults.odatakey + ')';
+
+              if (data) {
+                params[self.defaults.odatakey] = data[self.defaults.odatakey];
+              }
+            }
 
             var urlParams = self.urlParams = {};
             forEach(url.split(/\W/), function(param) {
@@ -617,6 +635,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             if (self.defaults.stripTrailingSlashes) {
               url = url.replace(/\/+$/, '') || '/';
             }
+            
 
             // then replace collapse `/.` if found in the last URL path segment before the query
             // E.g. `http://url.com/id./format?q=x` becomes `http://url.com/id.format?q=x`
@@ -637,6 +656,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
 
         function resourceFactory(url, paramDefaults, actions, options) {
+          options = options || {};
+
+          if (angular.isString(paramDefaults)) {
+            options.odatakey = paramDefaults;
+            paramDefaults = {};
+          }
+
           var route = new Route(url, options);
 
           actions = extend({}, provider.defaults.actions, actions);
@@ -734,14 +760,16 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
               if (hasBody) httpConfig.data = data;
 
+
               route.setUrlParams(httpConfig,
                 extend({}, extractParams(data, action.params || {}), params),
-                action.url);
+                action.url,
+                data,
+                isOdata);
 
               if (isOdata && odataQueryString !== "" && !isSingleElement) {
                 httpConfig.url += "?" + odataQueryString;
-              }
-              else if(isOdata && odataQueryString !== "" && isSingleElement){
+              } else if (isOdata && odataQueryString !== "" && isSingleElement) {
                 httpConfig.url += odataQueryString;
               }
 
@@ -749,13 +777,28 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 var data = response.data,
                   promise = value.$promise;
 
+                if (data && angular.isString(data['@odata.context']) && data.value) {
+                  var fullObject = data;
+                  data = data.value;
+                  for (var property in fullObject) {
+                    if (!fullObject.hasOwnProperty(property)) {
+                      continue;
+                    }
+
+                    if (property !== "value") {
+                      value[property] = fullObject[property];
+
+                    }
+                  }
+                }
+
                 if (data) {
                   // Need to convert action.isArray to boolean in case it is undefined
                   // jshint -W018
-                  if (angular.isArray(data) !== ( !isSingleElement && !! action.isArray)) {
+                  if (angular.isArray(data) !== (!isSingleElement && !! action.isArray)) {
                     throw $resourceMinErr('badcfg',
                       'Error in resource configuration for action `{0}`. Expected response to ' +
-                      'contain an {1} but got an {2} (Request: {3} {4})', name,(!isSingleElement && action.isArray) ? 'array' : 'object',
+                      'contain an {1} but got an {2} (Request: {3} {4})', name, (!isSingleElement && action.isArray) ? 'array' : 'object',
                       angular.isArray(data) ? 'array' : 'object', httpConfig.method, httpConfig.url);
                   }
                   // jshint +W018
@@ -827,7 +870,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
           var oldOdataResource = Resource.odata;
           Resource.odata = function() {
             var onQuery = function(queryString, success, error, isSingleElement) {
-              return oldOdataResource({}, {}, success, error, true, queryString,isSingleElement);
+              return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement);
             };
 
 

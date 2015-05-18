@@ -252,6 +252,54 @@ decimal ceiling(decimal p0) | new $odata.Func('floor','Freight')  | 33
 **Type Functions** | | 
 bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.String') | true
 
+### OData V4 support 
+This project supports basic odata v4 queries and responses.
+If the server responds with 
+```json
+{
+  "@odata.context":"http://local.testsite.com/odata/$metadata#TestData",
+   "value":[
+    {
+      "TestId":1,"Name":"test 1"
+    },{
+      "TestId":2,"Name":"test 2"
+    }
+  ],
+"totalCount":10
+}
+```
+
+The api will still return the array provided in the **value** property and everything else will be set as properties of the array.
+```javascript
+var User = $odataresource('/user/:userId', {userId:'@id'});
+var myUsers =   User.odata()
+                    .filter("Name","John")
+                    .query(); 
+
+//... later
+
+console.log(myUsers.totalCount)
+
+```
+
+#### Updating entries with OData v4
+ You can use the $update method on an object. This will call the endpoint with the key passed between ().
+ But for that you need to specify what is the property that contains the key.
+
+ There is two way of doing so :
+
+ * Provide the key property as a second argument.
+
+```javascript
+User = $odataresource('/user', 'id');
+var myUsers = User.odata.query();
+
+//... later
+myUsers[0].$update();
+//Will issue a PUT /user(1)
+```
+
+
 
 ### Build from the source
 
