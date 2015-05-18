@@ -254,15 +254,15 @@ bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.S
 
 ### OData V4 support 
 This project supports basic odata v4 queries and responses.
-If the server responds with 
+If the server responds with an array wrapped inside an object :
 ```json
 {
   "@odata.context":"http://local.testsite.com/odata/$metadata#TestData",
    "value":[
     {
-      "TestId":1,"Name":"test 1"
+      "TestId":1,"name":"test 1"
     },{
-      "TestId":2,"Name":"test 2"
+      "TestId":2,"name":"test 2"
     }
   ],
 "totalCount":10
@@ -278,7 +278,8 @@ var myUsers =   User.odata()
 
 //... later
 
-console.log(myUsers.totalCount)
+console.log(myUsers[0].name);
+console.log(myUsers.totalCount);
 
 ```
 
@@ -289,7 +290,6 @@ console.log(myUsers.totalCount)
  There is two way of doing so :
 
  * Provide the key property as a second argument.
-
 ```javascript
 User = $odataresource('/user', 'id');
 var myUsers = User.odata.query();
@@ -298,7 +298,15 @@ var myUsers = User.odata.query();
 myUsers[0].$update();
 //Will issue a PUT /user(1)
 ```
+ * Or provide it as a property of the 4th argument.
+```javascript
+User = $odataresource('/user', {},{},{odatakey : 'id'});
+var myUsers = User.odata.query();
 
+//... later
+myUsers[0].$update();
+//Will issue a PUT /user(1)
+```
 
 
 ### Build from the source
