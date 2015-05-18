@@ -284,7 +284,7 @@ console.log(myUsers.totalCount);
 ```
 
 #### Updating entries with OData v4
- You can use the $update method on an object. This will call the endpoint with the key passed between ().
+ You can use the $update method on an object.
  But for that you need to specify what is the property that contains the key.
 
  There is two way of doing so :
