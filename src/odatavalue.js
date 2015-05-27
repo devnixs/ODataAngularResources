@@ -24,7 +24,7 @@ factory('$odataValue', [
 		};
 
 		ODataValue.prototype.execute = function() {
-			if (typeof this.value === "string") {
+			if (angular.isString(this.value)) {
 				return "'" + escapeIllegalChars(this.value) + "'";
 			} else if (this.value === false) {
 				return "false";

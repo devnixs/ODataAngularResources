@@ -69,6 +69,16 @@ var myUsers =   User.odata().get(userId,
                             console.log("Oops, something wrong happened!")
                         });
 ```
+If you want to retrieve a single element after a query you can use the single() method which will take the first elements of the response. This method will throw if the reponse returns an empty array.
+```javascript
+var User = $odataresource('/user/:userId', {userId:'@id'});
+var myUser =   User.odata()
+                    .filter("Name","John")
+                    .single(); 
+//Queries /user?$filter=Name eq 'John' and put the first element into myUser
+
+```
+
 
 ###Query with top, orderBy and skip
 ```javascript

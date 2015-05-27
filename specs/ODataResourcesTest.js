@@ -168,8 +168,59 @@
 
 			});
 
+		describe('Single method', function() {
+			it('should execute the query but return a single element', function() {
+				$httpBackend.expectGET("/user?$filter=City eq 'France'&$expand=Orders").respond(200, [1, 2]);
+				var result=User.odata()
+					.filter("City", "France")
+					.expand("Orders")
+					.single();
+
+				$httpBackend.flush();
+
+				expect(angular.isArray(result)).not.toBeTruthy();
+			});
+			it('should throw if answers 0 elements', function() {
+				$httpBackend.expectGET("/user?$filter=City eq 'France'&$expand=Orders").respond(200, []);
+				expect(function(){
+				var result=User.odata()
+					.filter("City", "France")
+					.expand("Orders")
+					.single();
+
+					$httpBackend.flush();
+				}).toThrow();
+				//Force ending the digest cycle
+				scope.$$phase = undefined;
+
+				expect(1).toBe(1);
+			});
+			it('should take only the first element', function() {
+				$httpBackend.expectGET("/user?$filter=City eq 'France'&$expand=Orders").respond(200, [{name : 'Bob'}, {name:'Jimmy'}]);
+				var result=User.odata()
+					.filter("City", "France")
+					.expand("Orders")
+					.single();
+
+				$httpBackend.flush();
+
+				expect(result.name).toBe('Bob');
+			});
+			it('should work if return an object', function() {
+				$httpBackend.expectGET("/user?$filter=City eq 'France'&$expand=Orders").respond(200, {name : 'Bob'});
+				var result=User.odata()
+					.filter("City", "France")
+					.expand("Orders")
+					.single();
+
+				$httpBackend.flush();
+
+				expect(result.name).toBe('Bob');
+			});
+		});
 
 		});
+
 
 		describe('Resource with customized url', function() {
 			var User;

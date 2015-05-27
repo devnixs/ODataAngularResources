@@ -97,6 +97,16 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 		};
 
 
+		ODataProvider.prototype.single = function(data,success, error) {
+			if (!angular.isFunction(this.callback))
+				throw "Cannot execute get, no callback was specified";
+
+			success = success || angular.noop;
+			error = error || angular.noop;
+
+			return this.callback(this.execute(), success, error,true,true);
+		};
+
 		ODataProvider.prototype.get = function(data,success, error) {
 			if (!angular.isFunction(this.callback))
 				throw "Cannot execute get, no callback was specified";
