@@ -204,6 +204,54 @@ User.odata().filter(
 //Queries /user?$filter=Name eq Surname
 ```
 
+### Specifying the type of the data
+
+This library is clever enough to figure out the types from the data passed and format them accordingly.
+But sometimes you may need to have a specific output type. In this case you can pass a second argument to the $odata.Value() constructor : 
+```javascript
+User.odata().filter(
+                    'Latitude',
+                    new $odata.Value(40.765150,"Decimal")
+                    ).query();
+//Queries /user?$filter=Latitude eq 40.765150M
+
+User.odata().filter(
+                    'Latitude',
+                    new $odata.Value("75.42","Int32")
+                    ).query();
+//Queries /user?$filter=Latitude eq 75
+
+
+User.odata().filter(
+                    'Latitude',
+                    new $odata.Value("true","Boolean")
+                    ).query();
+//Queries /user?$filter=Latitude eq true
+
+
+User.odata().filter(
+                    'Latitude',
+                    new $odata.Value(10,"Boolean")
+                    ).query();
+//Queries /user?$filter=Latitude eq true
+
+```
+
+Here is the complete list of supported types :
+
+Type Name       | Output example
+----------------|---------------
+Boolean         | true 
+Byte            | FE
+DateTime        | datetime'2000-12-12T12:00'
+Decimal         | 2.345M
+Double          | 2.0d
+Single          | 2.0f
+Guid            | guid'12345678-aaaa-bbbb-cccc-ddddeeeeffff'
+Int32           | 51358
+String          | 'Hello OData'
+
+
 ###Function calls
 * You can call functions like endswith or length on an OData query.
 To do so, use the **$odata.Func** class.
