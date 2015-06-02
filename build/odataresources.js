@@ -124,11 +124,11 @@ factory('$odataValue', [
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(new Date(this.value));
 	        	}else if(this.type.toLowerCase() === "single"){
-	        		return parseInt(this.value)+"f";
+	        		return parseFloat(this.value)+"f";
 	        	}else if(this.type.toLowerCase() === "double"){
-	        		return parseInt(this.value)+"d";
+	        		return parseFloat(this.value)+"d";
 	        	}else if(this.type.toLowerCase() === "decimal"){
-	        		return parseInt(this.value)+"M";
+	        		return parseFloat(this.value)+"M";
 	        	}else if(this.type.toLowerCase() === "boolean"){
 	        		return this.value;
 	        	}else if(this.type.toLowerCase() === "int32"){

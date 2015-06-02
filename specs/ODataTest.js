@@ -342,19 +342,19 @@
                         expect(value.execute()).toBe("datetime'2015-06-02T00:00:00'");
                     });
                     it('To Decimal', function() {
-                        var value = new $odata.Value('10', 'Decimal');
-                        expect(value.execute()).toBe("10M");
+                        var value = new $odata.Value('10.5', 'Decimal');
+                        expect(value.execute()).toBe("10.5M");
                     });
                     it('To Double', function() {
-                        var value = new $odata.Value('10', 'Double');
-                        expect(value.execute()).toBe("10d");
+                        var value = new $odata.Value('10.5', 'Double');
+                        expect(value.execute()).toBe("10.5d");
                     });
                     it('To Single', function() {
-                        var value = new $odata.Value('10', 'Single');
-                        expect(value.execute()).toBe("10f");
+                        var value = new $odata.Value('10.5', 'Single');
+                        expect(value.execute()).toBe("10.5f");
                     });
                     it('To Int32', function() {
-                        var value = new $odata.Value('10', 'Int32');
+                        var value = new $odata.Value('10.5', 'Int32');
                         expect(value.execute()).toBe("10");
                     });
                     it('To binary', function() {
