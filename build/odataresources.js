@@ -114,6 +114,8 @@ factory('$odataValue', [
 	        		return this.value.getTime()+"d";
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(this.value);
+	        	}else if(this.type.toLowerCase()==="string"){
+	        		return "'"+this.value.toISOString()+"'";
 	        	}else {
 	        		throw "Cannot convert date ("+this.value+") into "+this.type;
 	        	}

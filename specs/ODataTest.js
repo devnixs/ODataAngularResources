@@ -257,7 +257,7 @@
                     });
                     it('To datetime', function() {
                         var value = new $odata.Value(1433267403614, 'Datetime');
-                        expect(value.execute()).toBe("datetime'2015-06-02T10:50:03'");
+                        expect(value.execute()).toMatch(/datetime'2015-06-02T/);
                     });
                     it('To guid', function() {
                         expect(function() {
@@ -298,8 +298,8 @@
                 });
                 describe('From datetime', function() {
                     it('to string', function() {
-                        var value = new $odata.Value(new Date(1433267403614), 'Datetime');
-                        expect(value.execute()).toBe("datetime'2015-06-02T10:50:03'");
+                        var value = new $odata.Value(new Date(1433267403614), 'string');
+                        expect(value.execute()).toBe("'2015-06-02T17:50:03.614Z'");
                     });
                     it('to bool', function() {
                         expect(function() {
