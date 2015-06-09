@@ -13,14 +13,16 @@ It does everything Angular Resources does but add some features:
 
 ##How to install
 
-1. Include the file **build/odataresources.js** into your project
-
-2. Be sure to register the module "ODataResources" in your module definition : 
+1. Download the repository or install the **bower package** : 
+```Shell
+bower install angular-odata-resources
+```
+2. Include the file **build/odataresources.js** into your project
+3. Be sure to register the module "ODataResources" in your module definition : 
 ```javascript
 var myModule = angular.module('myModule',['ODataResources']);
 ```
-
-3. Then replace your dependency to "$resource" by "$odataresource"
+4. Then replace your dependency to "$resource" by "$odataresource"
 ```javascript
 myModule.controller('MyController', ['$scope','$odataresource',function($scope,$odataresource){}]);
 ```
