@@ -1,0 +1,32 @@
+{
+  "name": "angular-odata-resources",
+  "version": "1.0.0",
+  "homepage": "https://github.com/devnixs/ODataAngularResources",
+  "authors": [
+    "Raphael ATALLAH <utfc243f@randomail.net>"
+  ],
+  "description": "Fluent OData queries from Angular's Resources",
+  "main": "build/odataresources.min.js",
+  "moduleType": [
+    "globals"
+  ],
+  "keywords": [
+    "OData",
+    "Angular",
+    "Resources",
+    "Fluent",
+    "Resource",
+    "$resources"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests",
+    "coverage",
+    "specs",
+    "src"
+  ]
+}
