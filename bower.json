@@ -28,6 +28,9 @@
     "coverage",
     "specs",
     "src"
-  ]
+  ],
+  "dependencies": {
+    "angularjs": "~1.4.1",
+    "DefinitelyTyped": "*"
+  }
 }
-
