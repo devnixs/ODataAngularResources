@@ -1,531 +1,563 @@
-angular.module('ODataResources', ['ng']);;
-
-angular.module('ODataResources').
-  factory('$odataOperators', [function() {
-
-      var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-      trim = function(value) {
-        return value.replace(rtrim, '');
-      };
-        
-
-  		var filterOperators =  {
-  			'eq':['=','==','==='],
-			'ne':['!=','!==','<>'],
-			'gt':['>'],
-			'ge':['>=','>=='],
-			'lt':['<'],
-			'le':['<=','<=='],
-			'and':['&&'],
-			'or':['||'],
-			'not':['!'],
-			'add':['+'],
-			'sub':['-'],
-			'mul':['*'],
-			'div':['/'],
-			'mod':['%'],
-  		};
-
-  		var convertOperator = function(from){
-  			var input = trim(from).toLowerCase();
-  			var key;
-  			for(key in filterOperators)
-  			{
-  				if(input === key) return key;
-
-  				var possibleValues = filterOperators[key];
-  				for (var i = 0; i < possibleValues.length; i++) {
-  					if(input === possibleValues[i]){
-  						return key;
-  					}
-  				}
-  			}
-
-  			throw "Operator "+ from+" not found";
-  		};
-
-  		return {
-  			operators : filterOperators,
-  			convert:convertOperator,
-  		};
-  	}]);
-;angular.module('ODataResources').
-factory('$odataValue', [
-
-    function() {
-        var illegalChars = {
-            '%': '%25',
-            '+': '%2B',
-            '/': '%2F',
-            '?': '%3F',
-            '#': '%23',
-            '&': '%26'
+/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    angular.module('ODataResources', ['ng']);
+})(OData || (OData = {}));
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var Operators = (function () {
+        function Operators() {
+            this.operators = {
+                'eq': ['=', '==', '==='],
+                'ne': ['!=', '!==', '<>'],
+                'gt': ['>'],
+                'ge': ['>=', '>=='],
+                'lt': ['<'],
+                'le': ['<=', '<=='],
+                'and': ['&&'],
+                'or': ['||'],
+                'not': ['!'],
+                'add': ['+'],
+                'sub': ['-'],
+                'mul': ['*'],
+                'div': ['/'],
+                'mod': ['%'],
+            };
+            this.rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
+        }
+        Operators.prototype.trim = function (value) {
+            return value.replace(this.rtrim, '');
         };
-        var escapeIllegalChars = function(string) {
-            for (var key in illegalChars) {
-                string = string.replace(key, illegalChars[key]);
+        Operators.prototype.convert = function (from) {
+            var input = this.trim(from).toLowerCase();
+            var key;
+            for (key in this.operators) {
+                if (input === key)
+                    return key;
+                var possibleValues = this.operators[key];
+                for (var i = 0; i < possibleValues.length; i++) {
+                    if (input === possibleValues[i]) {
+                        return key;
+                    }
+                }
             }
-            string = string.replace("'", "''");
-            return string;
+            throw "Operator " + from + " not found";
         };
-        var ODataValue = function(input, type) {
-            this.value = input;
+        return Operators;
+    })();
+    OData.Operators = Operators;
+})(OData || (OData = {}));
+angular.module('ODataResources').service('$odataOperators', OData.Operators);
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var ValueTypes = (function () {
+        function ValueTypes() {
+        }
+        ValueTypes.Boolean = "Boolean";
+        ValueTypes.Byte = "Byte";
+        ValueTypes.DateTime = "DateTime";
+        ValueTypes.Decimal = "Decimal";
+        ValueTypes.Double = "Double";
+        ValueTypes.Single = "Single";
+        ValueTypes.Guid = "Guid";
+        ValueTypes.Int32 = "Int32";
+        ValueTypes.String = "String";
+        return ValueTypes;
+    })();
+    OData.ValueTypes = ValueTypes;
+    var Value = (function () {
+        function Value(value, type) {
+            this.value = value;
             this.type = type;
+            this.illegalChars = {
+                '%': '%25',
+                '+': '%2B',
+                '/': '%2F',
+                '?': '%3F',
+                '#': '%23',
+                '&': '%26'
+            };
+        }
+        Value.prototype.escapeIllegalChars = function (haystack) {
+            for (var key in this.illegalChars) {
+                haystack = haystack.replace(key, this.illegalChars[key]);
+            }
+            haystack = haystack.replace("'", "''");
+            return haystack;
         };
-
-        var generateDate = function(date){
-        	return "datetime'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "'";
+        Value.prototype.generateDate = function (date) {
+            return "datetime'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "'";
         };
-
-        ODataValue.prototype.executeWithUndefinedType = function() {
+        Value.prototype.executeWithUndefinedType = function () {
             if (angular.isString(this.value)) {
-                return "'" + escapeIllegalChars(this.value) + "'";
-            } else if (this.value === false) {
+                return "'" + this.escapeIllegalChars(this.value) + "'";
+            }
+            else if (this.value === false) {
                 return "false";
-            } else if (this.value === true) {
+            }
+            else if (this.value === true) {
                 return "true";
-            } else if (angular.isDate(this.value)) {
-                return generateDate(this.value);
-            } else if (!isNaN(this.value)) {
+            }
+            else if (angular.isDate(this.value)) {
+                return this.generateDate(this.value);
+            }
+            else if (!isNaN(this.value)) {
                 return this.value;
-            } else {
+            }
+            else {
                 throw "Unrecognized type of " + this.value;
             }
         };
-
-        ODataValue.prototype.executeWithType = function(){
-        	if(this.value === true || this.value === false){
-	        	if(this.type.toLowerCase() === "boolean"){
-	        		return !!this.value+"";
-	        	}else if(this.type.toLowerCase() === "string"){
-	        		return "'"+!!this.value+"'";
-	        	}else {
-	        		throw "Cannot convert bool ("+this.value+") into "+this.type;
-	        	}
-	        }
-	        if(angular.isDate(this.value)){
-	        	if(this.type.toLowerCase() === "decimal"){
-	        		return this.value.getTime()+"M";
-	        	}else if(this.type.toLowerCase() === "int32"){
-	        		return this.value.getTime()+"";
-	        	}else if(this.type.toLowerCase() === "single"){
-	        		return this.value.getTime()+"f";
-	        	}else if(this.type.toLowerCase() === "double"){
-	        		return this.value.getTime()+"d";
-	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(this.value);
-	        	}else if(this.type.toLowerCase()==="string"){
-	        		return "'"+this.value.toISOString()+"'";
-	        	}else {
-	        		throw "Cannot convert date ("+this.value+") into "+this.type;
-	        	}
-	        }
-	        if(angular.isString(this.value)){
-	        	if(this.type.toLowerCase() === "guid"){
-	        		return "guid'"+this.value+"'";
-	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(new Date(this.value));
-	        	}else if(this.type.toLowerCase() === "single"){
-	        		return parseFloat(this.value)+"f";
-	        	}else if(this.type.toLowerCase() === "double"){
-	        		return parseFloat(this.value)+"d";
-	        	}else if(this.type.toLowerCase() === "decimal"){
-	        		return parseFloat(this.value)+"M";
-	        	}else if(this.type.toLowerCase() === "boolean"){
-	        		return this.value;
-	        	}else if(this.type.toLowerCase() === "int32"){
-	        		return parseInt(this.value)+"";
-	        	}else {
-	        		throw "Cannot convert "+this.value+" into "+this.type;
-	        	}
-        	}else if(!isNaN(this.value)){
-	        	if(this.type.toLowerCase() === "boolean"){
-	        		return !!this.value+"";
-	        	}else if(this.type.toLowerCase() === "decimal"){
-	        		return this.value+"M";
-	        	}else if(this.type.toLowerCase() === "double"){
-	        		return this.value+"d";
-	        	}else if(this.type.toLowerCase() === "single"){
-	        		return this.value+"f";
-	        	}else if(this.type.toLowerCase() === "byte"){
-	        		return (this.value%255).toString(16);
-	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(new Date(this.value));
-	        	}else if(this.type.toLowerCase() === "string"){
-	        		return "'"+this.value+"'";
-	        	}else {
-	        		throw "Cannot convert number ("+this.value+") into "+this.type;
-	        	}
-        	}
-        	else{
-        		throw "Source type of "+this.value+" to be conververted into "+this.type+"is not supported";
-        	}
-        };
-
-        ODataValue.prototype.execute = function() {
-            if (this.type === undefined) {
-            	return this.executeWithUndefinedType();
-            } else {
-            	return this.executeWithType();
+        Value.prototype.executeWithType = function () {
+            if (this.value === true || this.value === false) {
+                if (this.type.toLowerCase() === "boolean") {
+                    return !!this.value + "";
+                }
+                else if (this.type.toLowerCase() === "string") {
+                    return "'" + !!this.value + "'";
+                }
+                else {
+                    throw "Cannot convert bool (" + this.value + ") into " + this.type;
+                }
+            }
+            if (angular.isDate(this.value)) {
+                if (this.type.toLowerCase() === "decimal") {
+                    return this.value.getTime() + "M";
+                }
+                else if (this.type.toLowerCase() === "int32") {
+                    return this.value.getTime() + "";
+                }
+                else if (this.type.toLowerCase() === "single") {
+                    return this.value.getTime() + "f";
+                }
+                else if (this.type.toLowerCase() === "double") {
+                    return this.value.getTime() + "d";
+                }
+                else if (this.type.toLowerCase() === "datetime") {
+                    return this.generateDate(this.value);
+                }
+                else if (this.type.toLowerCase() === "string") {
+                    return "'" + this.value.toISOString() + "'";
+                }
+                else {
+                    throw "Cannot convert date (" + this.value + ") into " + this.type;
+                }
+            }
+            if (angular.isString(this.value)) {
+                if (this.type.toLowerCase() === "guid") {
+                    return "guid'" + this.value + "'";
+                }
+                else if (this.type.toLowerCase() === "datetime") {
+                    return this.generateDate(new Date(this.value));
+                }
+                else if (this.type.toLowerCase() === "single") {
+                    return parseFloat(this.value) + "f";
+                }
+                else if (this.type.toLowerCase() === "double") {
+                    return parseFloat(this.value) + "d";
+                }
+                else if (this.type.toLowerCase() === "decimal") {
+                    return parseFloat(this.value) + "M";
+                }
+                else if (this.type.toLowerCase() === "boolean") {
+                    return this.value;
+                }
+                else if (this.type.toLowerCase() === "int32") {
+                    return parseInt(this.value) + "";
+                }
+                else {
+                    throw "Cannot convert " + this.value + " into " + this.type;
+                }
+            }
+            else if (!isNaN(this.value)) {
+                if (this.type.toLowerCase() === "boolean") {
+                    return !!this.value + "";
+                }
+                else if (this.type.toLowerCase() === "decimal") {
+                    return this.value + "M";
+                }
+                else if (this.type.toLowerCase() === "double") {
+                    return this.value + "d";
+                }
+                else if (this.type.toLowerCase() === "single") {
+                    return this.value + "f";
+                }
+                else if (this.type.toLowerCase() === "byte") {
+                    return (this.value % 255).toString(16);
+                }
+                else if (this.type.toLowerCase() === "datetime") {
+                    return this.generateDate(new Date(this.value));
+                }
+                else if (this.type.toLowerCase() === "string") {
+                    return "'" + this.value + "'";
+                }
+                else {
+                    throw "Cannot convert number (" + this.value + ") into " + this.type;
+                }
+            }
+            else {
+                throw "Source type of " + this.value + " to be conververted into " + this.type + "is not supported";
             }
         };
-        return ODataValue;
-    }
-]);;angular.module('ODataResources').
-factory('$odataProperty', [function() {
-
-var ODataProperty = function(input){
-		this.value = input;
-	};
-
-	ODataProperty.prototype.execute = function(){
-		return this.value;
-	};
-	return ODataProperty;
-}]);
-	;angular.module('ODataResources').
-factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValue',function($odataOperators,ODataProperty,ODataValue) {
-
-	var ODataBinaryOperation = function(a1,a2,a3){
-		if(a1===undefined){
-			throw "The property of a filter cannot be undefined";
-		}
-
-		if(a2 === undefined){
-			throw "The value of a filter cannot be undefined";
-		}
-
-		if(a3 === undefined){
-			//If strings are specified, we assume that the first one is the object property and the second one its value
-
-			if(angular.isFunction(a1.execute)){
-				this.operandA = a1;
-			}else{
-				this.operandA = new ODataProperty(a1);
-			}
-			if(angular.isFunction(a2.execute)){
-				this.operandB = a2;
-			}else{
-				this.operandB = new ODataValue(a2);
-			}
-
-			this.filterOperator = 'eq';
-		}
-		else{
-			if(angular.isFunction(a1.execute)){
-				this.operandA = a1;
-			}else{
-				this.operandA = new ODataProperty(a1);
-			}
-			if(angular.isFunction(a3.execute)){
-				this.operandB = a3;
-			}else{
-				this.operandB = new ODataValue(a3);
-			}
-
-			this.filterOperator = $odataOperators.convert(a2);
-		}
-	};
-
-
-	ODataBinaryOperation.prototype.execute = function(noParenthesis){
-		var result = this.operandA.execute()+" "+this.filterOperator+" " +this.operandB.execute();
-		if(!noParenthesis)
-			result = "("+result+")";
-
-		return result;
-	};
-
-	ODataBinaryOperation.prototype.or = function(a1,a2,a3){
-		var other;
-		if(a2!==undefined){
-			other = new ODataBinaryOperation(a1,a2,a3);
-		}
-		else if(angular.isFunction(a1.execute)){
-			other = a1;
-		}
-		else{
-			throw "The object " +a1 +" passed as a parameter of the or method is not valid";
-		}
-		return new ODataBinaryOperation(this,"or",other);
-	};
-
-	ODataBinaryOperation.prototype.and = function(a1,a2,a3){
-		var other;
-		if(a2!==undefined){
-			other = new ODataBinaryOperation(a1,a2,a3);
-		}
-		else if(angular.isFunction(a1.execute)){
-			other = a1;
-		}
-		else{
-			throw "The object " +a1 +" passed as a parameter of the and method is not valid";
-		}
-		return new ODataBinaryOperation(this,"and",other);
-	};
-
-	return ODataBinaryOperation;
-}
-
-]);;angular.module('ODataResources').
-factory('$odataMethodCall', ['$odataProperty', '$odataValue',
-    function(ODataProperty, ODataValue) {
-
-        var ODataMethodCall = function(methodName) {
+        Value.prototype.execute = function () {
+            if (this.type === undefined) {
+                return this.executeWithUndefinedType();
+            }
+            else {
+                return this.executeWithType();
+            }
+        };
+        return Value;
+    })();
+    OData.Value = Value;
+})(OData || (OData = {}));
+angular.module('ODataResources').factory('$odataValue', [function () { return OData.Value; }]);
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var Property = (function () {
+        function Property(value) {
+            this.value = value;
+        }
+        Property.prototype.execute = function () {
+            return this.value;
+        };
+        return Property;
+    })();
+    OData.Property = Property;
+    angular.module('ODataResources').
+        factory('$odataProperty', [function () { return Property; }]);
+})(OData || (OData = {}));
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var BinaryOperation = (function () {
+        function BinaryOperation(a1, a2, a3) {
+            if (a1 === undefined) {
+                throw "The property of a filter cannot be undefined";
+            }
+            if (a2 === undefined) {
+                throw "The value of a filter cannot be undefined";
+            }
+            if (a3 === undefined) {
+                if (angular.isFunction(a1.execute)) {
+                    this.operandA = a1;
+                }
+                else {
+                    this.operandA = new OData.Property(a1);
+                }
+                if (angular.isFunction(a2.execute)) {
+                    this.operandB = a2;
+                }
+                else {
+                    this.operandB = new OData.Value(a2);
+                }
+                this.filterOperator = 'eq';
+            }
+            else {
+                if (angular.isFunction(a1.execute)) {
+                    this.operandA = a1;
+                }
+                else {
+                    this.operandA = new OData.Property(a1);
+                }
+                if (angular.isFunction(a3.execute)) {
+                    this.operandB = a3;
+                }
+                else {
+                    this.operandB = new OData.Value(a3);
+                }
+                var operators = new OData.Operators();
+                this.filterOperator = operators.convert(a2);
+            }
+        }
+        BinaryOperation.prototype.execute = function (noParenthesis) {
+            var result = this.operandA.execute() + " " + this.filterOperator + " " + this.operandB.execute();
+            if (!noParenthesis)
+                result = "(" + result + ")";
+            return result;
+        };
+        BinaryOperation.prototype.or = function (a1, a2, a3) {
+            var other;
+            if (a2 !== undefined) {
+                other = new BinaryOperation(a1, a2, a3);
+            }
+            else if (angular.isFunction(a1.execute)) {
+                other = a1;
+            }
+            else {
+                throw "The object " + a1 + " passed as a parameter of the or method is not valid";
+            }
+            return new BinaryOperation(this, "or", other);
+        };
+        BinaryOperation.prototype.and = function (a1, a2, a3) {
+            var other;
+            if (a2 !== undefined) {
+                other = new BinaryOperation(a1, a2, a3);
+            }
+            else if (angular.isFunction(a1.execute)) {
+                other = a1;
+            }
+            else {
+                throw "The object " + a1 + " passed as a parameter of the and method is not valid";
+            }
+            return new BinaryOperation(this, "and", other);
+        };
+        return BinaryOperation;
+    })();
+    OData.BinaryOperation = BinaryOperation;
+    angular.module('ODataResources').
+        factory('$odataBinaryOperation', ['$odataOperators', '$odataProperty', '$odataValue',
+        function ($odataOperators, ODataProperty, ODataValue) {
+            return BinaryOperation;
+        }
+    ]);
+})(OData || (OData = {}));
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var MethodCall = (function () {
+        function MethodCall(methodName) {
             if (methodName === undefined || methodName === "")
                 throw "Method name should be defined";
-
             this.params = [];
-
             if (arguments.length < 2)
                 throw "Method should be invoked with arguments";
-
             for (var i = 1; i < arguments.length; i++) {
                 var value = arguments[i];
                 if (angular.isFunction(value.execute)) {
                     this.params.push(value);
-                } else {
-                    //We assume the first one is the object property;
+                }
+                else {
                     if (i == 1) {
-                        this.params.push(new ODataProperty(value));
-                    } else {
-                        this.params.push(new ODataValue(value));
+                        this.params.push(new OData.Property(value));
+                    }
+                    else {
+                        this.params.push(new OData.Value(value));
                     }
                 }
             }
-
             this.methodName = methodName;
-        };
-
-        ODataMethodCall.prototype.execute = function() {
+        }
+        MethodCall.prototype.execute = function () {
             var invocation = this.methodName + "(";
             for (var i = 0; i < this.params.length; i++) {
-                if (i > 0)
+                if (i > 0) {
                     invocation += ",";
-
+                }
                 invocation += this.params[i].execute();
             }
             invocation += ")";
             return invocation;
         };
-
-        return ODataMethodCall;
-    }
-]);;angular.module('ODataResources').
-factory('$odataOrderByStatement', [function($odataOperators,ODataBinaryOperation,ODataPredicate) {
-
-	var ODataOrderByStatement = function(propertyName, sortOrder){
-		if(propertyName===undefined){
-			throw "Orderby should be passed a property name but got undefined";
-		}
-
-		this.propertyName = propertyName;
-
-		this.direction = sortOrder || "asc";
-	};
-
-	ODataOrderByStatement.prototype.execute = function() {
-		return this.propertyName+" "+this.direction;
-	};
-
-	return ODataOrderByStatement;
-}]);;angular.module('ODataResources').
-factory('$odataPredicate', ['$odataBinaryOperation',function(ODataBinaryOperation) {
-
-
-
-	var ODataPredicate = function(a1,a2,a3){
-		if(angular.isFunction(a1.execute) && a2 === undefined){
-			return a1;
-		}
-		else{
-			return new ODataBinaryOperation(a1,a2,a3);
-		}
-	};
-
-	ODataPredicate.and = function(andStatements){
-		if(andStatements.length>0){
-			var finalOperation = andStatements[0];
-
-			for (var i = 1; i < andStatements.length; i++) {
-				finalOperation = new ODataBinaryOperation(finalOperation,'and',andStatements[i]);
-			}
-			return finalOperation;
-		}
-		throw "No statements specified";
-	};
-
-	ODataPredicate.or = function(orStatements){
-		if(orStatements.length>0){
-			var finalOperation = orStatements[0];
-
-			for (var i = 1; i < orStatements.length; i++) {
-				finalOperation = new ODataBinaryOperation(finalOperation,'or',orStatements[i]);
-			}
-			return finalOperation;
-		}
-		throw "No statements specified for OR predicate";
-	};
-
-
-	ODataPredicate.create = function(a1,a2,a3){
-		if(angular.isFunction(a1.execute) && a2 === undefined){
-			return a1;
-		}
-		else{
-			return new ODataBinaryOperation(a1,a2,a3);
-		}
-	};
-
-	return ODataPredicate;
-
-}]);
-;angular.module('ODataResources').
-factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement',
-	function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement) {
-		var ODataProvider = function(callback) {
-			this.callback = callback;
-
-			this.filters = [];
-			this.sortOrders = [];
-			this.takeAmount = undefined;
-			this.skipAmount = undefined;
-			this.expandables = [];
-		};
-
-		ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
-			if (operand1 === undefined)
-				throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
-
-			var predicate;
-			if (angular.isFunction(operand1.execute) && operand2 === undefined) {
-				predicate = operand1;
-			} else {
-				predicate = new ODataBinaryOperation(operand1, operand2, operand3);
-			}
-			this.filters.push(predicate);
-			return this;
-		};
-
-		ODataProvider.prototype.orderBy = function(arg1, arg2) {
-			this.sortOrders.push(new ODataOrderByStatement(arg1, arg2));
-			return this;
-		};
-
-		ODataProvider.prototype.take = function(amount) {
-			this.takeAmount = amount;
-			return this;
-		};
-		ODataProvider.prototype.skip = function(amount) {
-			this.skipAmount = amount;
-			return this;
-		};
-
-		ODataProvider.prototype.execute = function() {
-			var queryString = '';
-			var i;
-			if (this.filters.length > 0) {
-				queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
-			}
-
-			if (this.sortOrders.length > 0) {
-				if (queryString !== "") queryString += "&";
-
-				queryString += "$orderby=";
-				for (i = 0; i < this.sortOrders.length; i++) {
-					if (i > 0) {
-						queryString += ",";
-					}
-					queryString += this.sortOrders[i].execute();
-				}
-			}
-
-			if (this.takeAmount) {
-				if (queryString !== "") queryString += "&";
-				queryString += "$top=" + this.takeAmount;
-			}
-
-
-			if (this.skipAmount) {
-				if (queryString !== "") queryString += "&";
-				queryString += "$skip=" + this.skipAmount;
-			}
-
-
-			if (this.expandables.length > 0) {
-				if (queryString !== "") queryString += "&";
-
-				queryString += "$expand=";
-				for (i = 0; i < this.expandables.length; i++) {
-					if (i > 0) {
-						queryString += ",";
-					}
-					queryString += this.expandables[i];
-				}
-			}
-
-			return queryString;
-		};
-
-		ODataProvider.prototype.query = function(success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute query, no callback was specified";
-
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			return this.callback(this.execute(), success, error);
-		};
-
-
-		ODataProvider.prototype.single = function(data,success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute get, no callback was specified";
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			return this.callback(this.execute(), success, error,true,true);
-		};
-
-		ODataProvider.prototype.get = function(data,success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute get, no callback was specified";
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			return this.callback("("+data+")", success, error,true);
-		};
-
-		ODataProvider.prototype.expand = function(params) {
-			if(!angular.isString(params) && !angular.isArray(params)){
-				throw "Invalid parameter passed to expand method ("+params+")";
-			}
-			if(params===""){
-				return;
-			}
-
-			var expandQuery = params;
-			if(angular.isArray(params)){
-				expandQuery = params.join('/');
-			}else{
-				expandQuery = Array.prototype.slice.call(arguments).join('/');
-			}
-
-			for (var i = 0; i < this.expandables.length; i++) {
-				if(this.expandables[i]===expandQuery)
-					return this;
-			}
-
-			this.expandables.push(expandQuery);
-			return this;
-		};
-
-		return ODataProvider;
-	}
-]);;/**
+        return MethodCall;
+    })();
+    OData.MethodCall = MethodCall;
+    angular.module('ODataResources').
+        factory('$odataMethodCall', ['$odataProperty', '$odataValue',
+        function () { return MethodCall; }
+    ]);
+})(OData || (OData = {}));
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var OrderByStatement = (function () {
+        function OrderByStatement(propertyName, sortOrder) {
+            this.propertyName = propertyName;
+            if (propertyName === undefined) {
+                throw "Orderby should be passed a property name but got undefined";
+            }
+            this.propertyName = propertyName;
+            this.direction = sortOrder || "asc";
+        }
+        OrderByStatement.prototype.execute = function () {
+            return this.propertyName + " " + this.direction;
+        };
+        return OrderByStatement;
+    })();
+    OData.OrderByStatement = OrderByStatement;
+})(OData || (OData = {}));
+angular.module('ODataResources').factory('$odataOrderByStatement', [function () { return OData.OrderByStatement; }]);
+;/// <reference path="references.d.ts" />
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
+var OData;
+(function (OData) {
+    var Predicate = (function (_super) {
+        __extends(Predicate, _super);
+        function Predicate(propertyOrValueOrPredicate, valueOrOperator, value) {
+            if (angular.isFunction(propertyOrValueOrPredicate.execute) && valueOrOperator === undefined) {
+                return propertyOrValueOrPredicate;
+            }
+            else {
+                _super.call(this, propertyOrValueOrPredicate, valueOrOperator, value);
+            }
+        }
+        Predicate.or = function (orStatements) {
+            if (orStatements.length > 0) {
+                var finalOperation = orStatements[0];
+                for (var i = 1; i < orStatements.length; i++) {
+                    finalOperation = new OData.BinaryOperation(finalOperation, 'or', orStatements[i]);
+                }
+                return finalOperation;
+            }
+            throw "No statements specified for OR predicate";
+        };
+        Predicate.create = function (a1, a2, a3) {
+            if (angular.isFunction(a1.execute) && a2 === undefined) {
+                return a1;
+            }
+            else {
+                return new OData.BinaryOperation(a1, a2, a3);
+            }
+        };
+        Predicate.and = function (andStatements) {
+            if (andStatements.length > 0) {
+                var finalOperation = andStatements[0];
+                for (var i = 1; i < andStatements.length; i++) {
+                    finalOperation = new OData.BinaryOperation(finalOperation, 'and', andStatements[i]);
+                }
+                return finalOperation;
+            }
+            throw "No statements specified";
+        };
+        return Predicate;
+    })(OData.BinaryOperation);
+    OData.Predicate = Predicate;
+})(OData || (OData = {}));
+angular.module('ODataResources').factory('$odataPredicate', [function () { return OData.Predicate; }]);
+;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var Provider = (function () {
+        function Provider(callback) {
+            this.callback = callback;
+            this.filters = [];
+            this.sortOrders = [];
+            this.takeAmount = undefined;
+            this.skipAmount = undefined;
+            this.expandables = [];
+        }
+        Provider.prototype.filter = function (operand1, operand2, operand3) {
+            if (operand1 === undefined)
+                throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
+            var predicate;
+            if (angular.isFunction(operand1.execute) && operand2 === undefined) {
+                predicate = operand1;
+            }
+            else {
+                predicate = new OData.BinaryOperation(operand1, operand2, operand3);
+            }
+            this.filters.push(predicate);
+            return this;
+        };
+        Provider.prototype.orderBy = function (arg1, arg2) {
+            this.sortOrders.push(new OData.OrderByStatement(arg1, arg2));
+            return this;
+        };
+        Provider.prototype.take = function (amount) {
+            this.takeAmount = amount;
+            return this;
+        };
+        Provider.prototype.skip = function (amount) {
+            this.skipAmount = amount;
+            return this;
+        };
+        Provider.prototype.execute = function () {
+            var queryString = '';
+            var i;
+            if (this.filters.length > 0) {
+                queryString = "$filter=" + OData.Predicate.and(this.filters).execute(true);
+            }
+            if (this.sortOrders.length > 0) {
+                if (queryString !== "")
+                    queryString += "&";
+                queryString += "$orderby=";
+                for (i = 0; i < this.sortOrders.length; i++) {
+                    if (i > 0) {
+                        queryString += ",";
+                    }
+                    queryString += this.sortOrders[i].execute();
+                }
+            }
+            if (this.takeAmount) {
+                if (queryString !== "")
+                    queryString += "&";
+                queryString += "$top=" + this.takeAmount;
+            }
+            if (this.skipAmount) {
+                if (queryString !== "")
+                    queryString += "&";
+                queryString += "$skip=" + this.skipAmount;
+            }
+            if (this.expandables.length > 0) {
+                if (queryString !== "")
+                    queryString += "&";
+                queryString += "$expand=";
+                for (i = 0; i < this.expandables.length; i++) {
+                    if (i > 0) {
+                        queryString += ",";
+                    }
+                    queryString += this.expandables[i];
+                }
+            }
+            return queryString;
+        };
+        Provider.prototype.query = function (success, error) {
+            if (!angular.isFunction(this.callback))
+                throw "Cannot execute query, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            return this.callback(this.execute(), success, error);
+        };
+        Provider.prototype.single = function (success, error) {
+            if (!angular.isFunction(this.callback))
+                throw "Cannot execute get, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            return this.callback(this.execute(), success, error, true, true);
+        };
+        Provider.prototype.get = function (data, success, error) {
+            if (!angular.isFunction(this.callback))
+                throw "Cannot execute get, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            return this.callback("(" + data + ")", success, error, true);
+        };
+        Provider.prototype.expand = function (params, otherParam1, otherParam2, otherParam3, otherParam4, otherParam5, otherParam6, otherParam7) {
+            if (!angular.isString(params) && !angular.isArray(params)) {
+                throw "Invalid parameter passed to expand method (" + params + ")";
+            }
+            if (params === "") {
+                return;
+            }
+            var expandQuery = params;
+            if (angular.isArray(params)) {
+                expandQuery = params.join('/');
+            }
+            else {
+                expandQuery = Array.prototype.slice.call(arguments).join('/');
+            }
+            for (var i = 0; i < this.expandables.length; i++) {
+                if (this.expandables[i] === expandQuery)
+                    return this;
+            }
+            this.expandables.push(expandQuery);
+            return this;
+        };
+        return Provider;
+    })();
+    OData.Provider = Provider;
+})(OData || (OData = {}));
+angular.module('ODataResources').
+    factory('$odataProvider', [function () { return OData.Provider; }]);
+;/**
  * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
@@ -988,19 +1020,23 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
   });
 
 
-})(window, window.angular);;angular.module('ODataResources').
-factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
-	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement',
-	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement) {
-
-		return {
-			Provider : ODataProvider,
-			BinaryOperation : ODataBinaryOperation,
-			Value : ODataValue,
-			Property : ODataProperty,
-			Func : ODataMethodCall,
-			Predicate : ODataPredicate,
-			OrderBy : ODataOrderByStatement,
-		};
-
-	}]);
+})(window, window.angular);;/// <reference path="references.d.ts" />
+var OData;
+(function (OData) {
+    var Global = (function () {
+        function Global(ODataBinaryOperation, ODataProvider, ODataValue, ODataProperty, ODataMethodCall, ODataPredicate, ODataOrderByStatement) {
+            this.Provider = ODataProvider;
+            this.BinaryOperation = ODataBinaryOperation;
+            this.Value = ODataValue;
+            this.Property = ODataProperty;
+            this.Func = ODataMethodCall;
+            this.Predicate = ODataPredicate;
+            this.OrderBy = ODataOrderByStatement;
+        }
+        Global.$inject = ['$odataBinaryOperation', '$odataProvider', '$odataValue',
+            '$odataProperty', '$odataMethodCall', '$odataPredicate', '$odataOrderByStatement'];
+        return Global;
+    })();
+    OData.Global = Global;
+    angular.module('ODataResources').service("$odata", Global);
+})(OData || (OData = {}));

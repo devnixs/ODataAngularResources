@@ -2,24 +2,28 @@
 
 module OData {
 
-	interface ProviderCallback {
+	export interface ProviderCallback<T> {
+		(queryString: string,
+			success: () => any,
+			error: () => any): T[];
+
 		(queryString: string,
 			success: () => any,
 			error: () => any,
 			isSingleElement?: boolean,
-			forceSingleElement?: boolean): void;
+			forceSingleElement?: boolean): T;
 	}
 
-	export class Provider implements IExecutable {
+	export class Provider<T> {
 		private filters = [];
 		private sortOrders = [];
 		private takeAmount = undefined;
 		private skipAmount = undefined;
 		private expandables = [];
 
-		constructor(private callback: ProviderCallback) { }
+		constructor(private callback: ProviderCallback<T>) { }
 
-		public filter(operand1, operand2, operand3) {
+		public filter(operand1, operand2?, operand3?): Provider<T>{
 			if (operand1 === undefined)
 				throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
 
@@ -31,23 +35,23 @@ module OData {
 			}
 			this.filters.push(predicate);
 			return this;
-		};
+		}
 
-		public orderBy(arg1, arg2) {
+		public orderBy(arg1, arg2?): Provider<T> {
 			this.sortOrders.push(new OrderByStatement(arg1, arg2));
 			return this;
-		};
+		}
 
-		public take(amount) {
+		public take(amount:number): Provider<T> {
 			this.takeAmount = amount;
 			return this;
-		};
-		public skip(amount) {
+		}
+		public skip(amount:number) : Provider<T>{
 			this.skipAmount = amount;
 			return this;
-		};
+		}
 
-		public execute() {
+		private execute() {
 			var queryString = '';
 			var i;
 			if (this.filters.length > 0) {
@@ -91,9 +95,9 @@ module OData {
 			}
 
 			return queryString;
-		};
+		}
 
-		public query(success, error) {
+		public query(success?, error?): T[] {
 			if (!angular.isFunction(this.callback))
 				throw "Cannot execute query, no callback was specified";
 
@@ -102,10 +106,10 @@ module OData {
 			error = error || angular.noop;
 
 			return this.callback(this.execute(), success, error);
-		};
+		}
 
 
-		public single(data, success, error) {
+		public single(success?, error?):T {
 			if (!angular.isFunction(this.callback))
 				throw "Cannot execute get, no callback was specified";
 
@@ -113,9 +117,9 @@ module OData {
 			error = error || angular.noop;
 
 			return this.callback(this.execute(), success, error, true, true);
-		};
+		}
 
-		public get(data, success, error) {
+		public get(data, success?, error?): T {
 			if (!angular.isFunction(this.callback))
 				throw "Cannot execute get, no callback was specified";
 
@@ -123,9 +127,9 @@ module OData {
 			error = error || angular.noop;
 
 			return this.callback("(" + data + ")", success, error, true);
-		};
+		}
 
-		public expand(params) {
+		public expand(params,otherParam1?,otherParam2?,otherParam3?,otherParam4?,otherParam5?,otherParam6?,otherParam7?): Provider<T> {
 			if (!angular.isString(params) && !angular.isArray(params)) {
 				throw "Invalid parameter passed to expand method (" + params + ")";
 			}
@@ -147,7 +151,7 @@ module OData {
 
 			this.expandables.push(expandQuery);
 			return this;
-		};
+		}
 	}
 
 }

@@ -32,6 +32,13 @@
     "grunt-contrib-watch": "^0.6.1",
     "grunt-coveralls": "^1.0.0",
     "grunt-jasmine": "^0.1.0",
-    "grunt-template-jasmine-istanbul": "^0.3.3"
+    "grunt-template-jasmine-istanbul": "^0.3.3",
+    "grunt-ts": "^4.2.0-beta.1",
+    "grunt-typescript": "^0.6.2",
+    "install": "^0.1.8",
+    "npm": "^2.11.3"
+  },
+  "dependencies": {
+    "grunt-ts": "^4.2.0-beta.1"
   }
 }

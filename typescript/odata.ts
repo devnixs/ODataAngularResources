@@ -22,7 +22,7 @@ module OData {
 				this.OrderBy = ODataOrderByStatement;
 		}
 
-		public Provider : Provider;
+		public Provider : Provider<any>;
 		public BinaryOperation : typeof BinaryOperation;
 		public Value : typeof Value;
 		public Property : typeof Property;

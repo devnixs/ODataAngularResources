@@ -15,8 +15,6 @@ module OData {
 	}
 
 	export class Value {
-		private value;
-
         private illegalChars = {
             '%': '%25',
             '+': '%2B',
@@ -32,11 +30,11 @@ module OData {
             }
             haystack = haystack.replace("'", "''");
             return haystack;
-        };
+        }
 
 		private generateDate(date) {
 			return "datetime'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "'";
-        };
+        }
 
         public executeWithUndefinedType() {
             if (angular.isString(this.value)) {
@@ -52,7 +50,7 @@ module OData {
             } else {
                 throw "Unrecognized type of " + this.value;
             }
-        };
+        }
 
         public executeWithType() {
 			if (this.value === true || this.value === false) {
@@ -129,9 +127,9 @@ module OData {
             } else {
 				return this.executeWithType();
             }
-        };
+        }
 
-		constructor(private input, private type?: string) {}
+		constructor(private value, private type?: string) {}
 	}
 }
 

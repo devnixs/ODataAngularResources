@@ -22,7 +22,7 @@ module OData {
     private rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
     private trim(value: string): string {
       return value.replace(this.rtrim, '');
-    };
+    }
 
     public convert(from: string) {
       var input = this.trim(from).toLowerCase();
@@ -39,7 +39,7 @@ module OData {
       }
 
       throw "Operator " + from + " not found";
-    };
+    }
 
   }
 }

@@ -2,10 +2,10 @@
 
 module OData{
 	export class Property implements IExecutable{
-		constructor(private input:string){}
+		constructor(private value:string){}
 		
 		public execute():string{
-			return this.input;
+			return this.value;
 		}	
 	}
 

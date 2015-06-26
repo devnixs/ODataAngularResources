@@ -9,19 +9,7 @@ module OData {
 		private operandB;
 		private filterOperator;
 
-		private $odataOperators;
-		private ODataProperty;
-		private ODataValue;
-
-		private initDependencies(){
-			var injector = angular.injector(['ng', 'ODataResources'])
-			this.$odataOperators = injector.get("$odataOperators");
-			this.ODataProperty = injector.get("ODataProperty");
-			this.ODataValue = injector.get("ODataValue");
-		}
-
 		constructor(a1, a2, a3) {
-			this.initDependencies();
 			if (a1 === undefined) {
 				throw "The property of a filter cannot be undefined";
 			}
@@ -36,12 +24,12 @@ module OData {
 				if (angular.isFunction(a1.execute)) {
 					this.operandA = a1;
 				} else {
-					this.operandA = new this.ODataProperty(a1);
+					this.operandA = new OData.Property(a1);
 				}
 				if (angular.isFunction(a2.execute)) {
 					this.operandB = a2;
 				} else {
-					this.operandB = new this.ODataValue(a2);
+					this.operandB = new OData.Value(a2);
 				}
 
 				this.filterOperator = 'eq';
@@ -50,15 +38,15 @@ module OData {
 				if (angular.isFunction(a1.execute)) {
 					this.operandA = a1;
 				} else {
-					this.operandA = new this.ODataProperty(a1);
+					this.operandA = new OData.Property(a1);
 				}
 				if (angular.isFunction(a3.execute)) {
 					this.operandB = a3;
 				} else {
-					this.operandB = new this.ODataValue(a3);
+					this.operandB = new OData.Value(a3);
 				}
-
-				this.filterOperator = this.$odataOperators.convert(a2);
+				var operators = new OData.Operators();
+				this.filterOperator = operators.convert(a2);
 			}
 		}
 
@@ -68,7 +56,7 @@ module OData {
 				result = "(" + result + ")";
 
 			return result;
-		};
+		}
 
 		public or(a1, a2, a3) {
 			var other;

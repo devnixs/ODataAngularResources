@@ -5,15 +5,6 @@ module OData {
         private methodName: string;
         private params: IExecutable[];
 
-        private ODataProperty: typeof Property;
-        private ODataValue: typeof Value;
-
-        private initDependencies() {
-            var injector = angular.injector(['ng', 'ODataResources'])
-            this.ODataProperty = injector.get("$odataProperty");
-            this.ODataValue = injector.get("$odataValue");
-        }
-
         public execute(): string {
             var invocation = this.methodName + "(";
             for (var i = 0; i < this.params.length; i++) {
@@ -25,7 +16,7 @@ module OData {
             }
             invocation += ")";
             return invocation;
-        };
+        }
 
         constructor(methodName: string) {
             if (methodName === undefined || methodName === "")
@@ -43,9 +34,9 @@ module OData {
                 } else {
                     //We assume the first one is the object property;
                     if (i == 1) {
-                        this.params.push(new this.ODataProperty(value));
+                        this.params.push(new OData.Property(value));
                     } else {
-                        this.params.push(new this.ODataValue(value));
+                        this.params.push(new OData.Value(value));
                     }
                 }
             }
