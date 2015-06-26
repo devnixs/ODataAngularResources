@@ -1,6 +1,14 @@
 /// <reference path="references.d.ts" />
 
 module OData{
+	export interface PredicateFactory{
+		new (propertyOrValueOrPredicate:any,valueOrOperator?:any,value?:any): Predicate;
+		or(orStatements: any[]): IExecutable;
+		create(propertyOrPredicate:any,operatorOrValue?:any,value?:any): IExecutable;
+		and(andStatements:any): IExecutable;
+	}
+
+	
 	export class Predicate extends BinaryOperation{
 
 		constructor(propertyOrValueOrPredicate,valueOrOperator?,value?){
@@ -27,12 +35,12 @@ module OData{
 		}
 
 
-		public static create(a1,a2,a3): IExecutable{
-			if(angular.isFunction(a1.execute) && a2 === undefined){
-				return a1;
+		public static create(propertyOrPredicate :any,operatorOrValue?:any,value?:any): IExecutable{
+			if(angular.isFunction(propertyOrPredicate.execute) && operatorOrValue === undefined){
+				return propertyOrPredicate;
 			}
 			else{
-				return new BinaryOperation(a1,a2,a3);
+				return new BinaryOperation(propertyOrPredicate,operatorOrValue,value);
 			}
 		}
 

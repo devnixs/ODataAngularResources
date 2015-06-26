@@ -27,12 +27,12 @@ var OData;
             }
             throw "No statements specified for OR predicate";
         };
-        Predicate.create = function (a1, a2, a3) {
-            if (angular.isFunction(a1.execute) && a2 === undefined) {
-                return a1;
+        Predicate.create = function (propertyOrPredicate, operatorOrValue, value) {
+            if (angular.isFunction(propertyOrPredicate.execute) && operatorOrValue === undefined) {
+                return propertyOrPredicate;
             }
             else {
-                return new OData.BinaryOperation(a1, a2, a3);
+                return new OData.BinaryOperation(propertyOrPredicate, operatorOrValue, value);
             }
         };
         Predicate.and = function (andStatements) {

@@ -8,5 +8,5 @@
 /// <reference path="odataproperty.ts" />
 /// <reference path="odataprovider.ts" />
 /// <reference path="odatavalue.ts" />
-/// <reference path="../odataresources.d.ts" />
+/// <reference path="odataresources.d.ts" />
 /// <reference path="../bower_components/DefinitelyTyped/angularjs/angular.d.ts" />

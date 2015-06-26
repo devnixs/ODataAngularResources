@@ -1,6 +1,9 @@
 /// <reference path="references.d.ts" />
 
 module OData {
+	export interface ProviderFactory {
+		new <T>(callback: ProviderCallback<T>): Provider<T>;
+	}
 
 	export interface ProviderCallback<T> {
 		(queryString: string,

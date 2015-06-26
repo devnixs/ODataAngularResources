@@ -2,6 +2,9 @@
 
 module OData {
 
+	export interface BinaryOperationFactory{
+		new (propertyOrPredicate, valueOrOperator?, value?):BinaryOperation
+	}
 
 	export class BinaryOperation implements IExecutable{
 
@@ -9,44 +12,44 @@ module OData {
 		private operandB;
 		private filterOperator;
 
-		constructor(a1, a2, a3) {
-			if (a1 === undefined) {
+		constructor(propertyOrPredicate, valueOrOperator?, value?) {
+			if (propertyOrPredicate === undefined) {
 				throw "The property of a filter cannot be undefined";
 			}
 
-			if (a2 === undefined) {
+			if (valueOrOperator === undefined) {
 				throw "The value of a filter cannot be undefined";
 			}
 
-			if (a3 === undefined) {
+			if (value === undefined) {
 				//If strings are specified, we assume that the first one is the object property and the second one its value
 
-				if (angular.isFunction(a1.execute)) {
-					this.operandA = a1;
+				if (angular.isFunction(propertyOrPredicate.execute)) {
+					this.operandA = propertyOrPredicate;
 				} else {
-					this.operandA = new OData.Property(a1);
+					this.operandA = new OData.Property(propertyOrPredicate);
 				}
-				if (angular.isFunction(a2.execute)) {
-					this.operandB = a2;
+				if (angular.isFunction(valueOrOperator.execute)) {
+					this.operandB = valueOrOperator;
 				} else {
-					this.operandB = new OData.Value(a2);
+					this.operandB = new OData.Value(valueOrOperator);
 				}
 
 				this.filterOperator = 'eq';
 			}
 			else {
-				if (angular.isFunction(a1.execute)) {
-					this.operandA = a1;
+				if (angular.isFunction(propertyOrPredicate.execute)) {
+					this.operandA = propertyOrPredicate;
 				} else {
-					this.operandA = new OData.Property(a1);
+					this.operandA = new OData.Property(propertyOrPredicate);
 				}
-				if (angular.isFunction(a3.execute)) {
-					this.operandB = a3;
+				if (angular.isFunction(value.execute)) {
+					this.operandB = value;
 				} else {
-					this.operandB = new OData.Value(a3);
+					this.operandB = new OData.Value(value);
 				}
 				var operators = new OData.Operators();
-				this.filterOperator = operators.convert(a2);
+				this.filterOperator = operators.convert(valueOrOperator);
 			}
 		}
 
@@ -58,30 +61,30 @@ module OData {
 			return result;
 		}
 
-		public or(a1, a2, a3) {
+		public or(propertyOrPredicate , operatorOrValue? , value?) {
 			var other;
-			if (a2 !== undefined) {
-				other = new BinaryOperation(a1, a2, a3);
+			if (operatorOrValue !== undefined) {
+				other = new BinaryOperation(propertyOrPredicate, operatorOrValue, value);
 			}
-			else if (angular.isFunction(a1.execute)) {
-				other = a1;
+			else if (angular.isFunction(propertyOrPredicate.execute)) {
+				other = propertyOrPredicate;
 			}
 			else {
-				throw "The object " + a1 + " passed as a parameter of the or method is not valid";
+				throw "The object " + propertyOrPredicate + " passed as a parameter of the or method is not valid";
 			}
 			return new BinaryOperation(this, "or", other);
 		}
 
-		public and(a1, a2, a3) {
+		public and(propertyOrPredicate, operatorOrValue? , value?) {
 			var other;
-			if (a2 !== undefined) {
-				other = new BinaryOperation(a1, a2, a3);
+			if (operatorOrValue !== undefined) {
+				other = new BinaryOperation(propertyOrPredicate, operatorOrValue, value);
 			}
-			else if (angular.isFunction(a1.execute)) {
-				other = a1;
+			else if (angular.isFunction(propertyOrPredicate.execute)) {
+				other = propertyOrPredicate;
 			}
 			else {
-				throw "The object " + a1 + " passed as a parameter of the and method is not valid";
+				throw "The object " + propertyOrPredicate + " passed as a parameter of the and method is not valid";
 			}
 			return new BinaryOperation(this, "and", other);
 		}

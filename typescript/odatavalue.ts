@@ -1,6 +1,9 @@
 /// <reference path="references.d.ts" />
 
 module OData {
+	export interface ValueFactory {
+		new ( value, type?: string): Value;
+	}
 
 	export class ValueTypes {
 		public static Boolean = "Boolean";

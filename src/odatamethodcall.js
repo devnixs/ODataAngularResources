@@ -3,6 +3,10 @@ var OData;
 (function (OData) {
     var MethodCall = (function () {
         function MethodCall(methodName) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
             if (methodName === undefined || methodName === "")
                 throw "Method name should be defined";
             this.params = [];

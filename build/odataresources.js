@@ -234,43 +234,43 @@ var OData;
 var OData;
 (function (OData) {
     var BinaryOperation = (function () {
-        function BinaryOperation(a1, a2, a3) {
-            if (a1 === undefined) {
+        function BinaryOperation(propertyOrPredicate, valueOrOperator, value) {
+            if (propertyOrPredicate === undefined) {
                 throw "The property of a filter cannot be undefined";
             }
-            if (a2 === undefined) {
+            if (valueOrOperator === undefined) {
                 throw "The value of a filter cannot be undefined";
             }
-            if (a3 === undefined) {
-                if (angular.isFunction(a1.execute)) {
-                    this.operandA = a1;
+            if (value === undefined) {
+                if (angular.isFunction(propertyOrPredicate.execute)) {
+                    this.operandA = propertyOrPredicate;
                 }
                 else {
-                    this.operandA = new OData.Property(a1);
+                    this.operandA = new OData.Property(propertyOrPredicate);
                 }
-                if (angular.isFunction(a2.execute)) {
-                    this.operandB = a2;
+                if (angular.isFunction(valueOrOperator.execute)) {
+                    this.operandB = valueOrOperator;
                 }
                 else {
-                    this.operandB = new OData.Value(a2);
+                    this.operandB = new OData.Value(valueOrOperator);
                 }
                 this.filterOperator = 'eq';
             }
             else {
-                if (angular.isFunction(a1.execute)) {
-                    this.operandA = a1;
+                if (angular.isFunction(propertyOrPredicate.execute)) {
+                    this.operandA = propertyOrPredicate;
                 }
                 else {
-                    this.operandA = new OData.Property(a1);
+                    this.operandA = new OData.Property(propertyOrPredicate);
                 }
-                if (angular.isFunction(a3.execute)) {
-                    this.operandB = a3;
+                if (angular.isFunction(value.execute)) {
+                    this.operandB = value;
                 }
                 else {
-                    this.operandB = new OData.Value(a3);
+                    this.operandB = new OData.Value(value);
                 }
                 var operators = new OData.Operators();
-                this.filterOperator = operators.convert(a2);
+                this.filterOperator = operators.convert(valueOrOperator);
             }
         }
         BinaryOperation.prototype.execute = function (noParenthesis) {
@@ -279,29 +279,29 @@ var OData;
                 result = "(" + result + ")";
             return result;
         };
-        BinaryOperation.prototype.or = function (a1, a2, a3) {
+        BinaryOperation.prototype.or = function (propertyOrPredicate, operatorOrValue, value) {
             var other;
-            if (a2 !== undefined) {
-                other = new BinaryOperation(a1, a2, a3);
+            if (operatorOrValue !== undefined) {
+                other = new BinaryOperation(propertyOrPredicate, operatorOrValue, value);
             }
-            else if (angular.isFunction(a1.execute)) {
-                other = a1;
+            else if (angular.isFunction(propertyOrPredicate.execute)) {
+                other = propertyOrPredicate;
             }
             else {
-                throw "The object " + a1 + " passed as a parameter of the or method is not valid";
+                throw "The object " + propertyOrPredicate + " passed as a parameter of the or method is not valid";
             }
             return new BinaryOperation(this, "or", other);
         };
-        BinaryOperation.prototype.and = function (a1, a2, a3) {
+        BinaryOperation.prototype.and = function (propertyOrPredicate, operatorOrValue, value) {
             var other;
-            if (a2 !== undefined) {
-                other = new BinaryOperation(a1, a2, a3);
+            if (operatorOrValue !== undefined) {
+                other = new BinaryOperation(propertyOrPredicate, operatorOrValue, value);
             }
-            else if (angular.isFunction(a1.execute)) {
-                other = a1;
+            else if (angular.isFunction(propertyOrPredicate.execute)) {
+                other = propertyOrPredicate;
             }
             else {
-                throw "The object " + a1 + " passed as a parameter of the and method is not valid";
+                throw "The object " + propertyOrPredicate + " passed as a parameter of the and method is not valid";
             }
             return new BinaryOperation(this, "and", other);
         };
@@ -320,6 +320,10 @@ var OData;
 (function (OData) {
     var MethodCall = (function () {
         function MethodCall(methodName) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
             if (methodName === undefined || methodName === "")
                 throw "Method name should be defined";
             this.params = [];
@@ -409,12 +413,12 @@ var OData;
             }
             throw "No statements specified for OR predicate";
         };
-        Predicate.create = function (a1, a2, a3) {
-            if (angular.isFunction(a1.execute) && a2 === undefined) {
-                return a1;
+        Predicate.create = function (propertyOrPredicate, operatorOrValue, value) {
+            if (angular.isFunction(propertyOrPredicate.execute) && operatorOrValue === undefined) {
+                return propertyOrPredicate;
             }
             else {
-                return new OData.BinaryOperation(a1, a2, a3);
+                return new OData.BinaryOperation(propertyOrPredicate, operatorOrValue, value);
             }
         };
         Predicate.and = function (andStatements) {

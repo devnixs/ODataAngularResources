@@ -1,4 +1,4 @@
-/// <reference path="typescript/references.d.ts" />
+/// <reference path="references.d.ts" />
 
 declare module OData {
 

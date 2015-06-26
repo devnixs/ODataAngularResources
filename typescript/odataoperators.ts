@@ -1,6 +1,7 @@
 /// <reference path="references.d.ts" />
 
 module OData {
+
   export class Operators {
     public operators = {
       'eq': ['=', '==', '==='],

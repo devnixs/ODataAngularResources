@@ -1,6 +1,10 @@
 /// <reference path="references.d.ts" />
 
 module OData {
+    export interface MethodCallFactory{
+        new (methodName: string,...args):MethodCall
+    }
+    
     export class MethodCall implements IExecutable {
         private methodName: string;
         private params: IExecutable[];
@@ -18,7 +22,7 @@ module OData {
             return invocation;
         }
 
-        constructor(methodName: string) {
+        constructor(methodName: string,...args) {
             if (methodName === undefined || methodName === "")
                 throw "Method name should be defined";
 

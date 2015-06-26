@@ -1,5 +1,9 @@
 /// <reference path="references.d.ts" />
 module OData{
+	export interface OrderByStatementFactory{
+		new (propertyName: string, sortOrder?: string): OrderByStatement;
+	}
+
 	export class OrderByStatement implements IExecutable{
 		private direction: string;
 		public execute():string{

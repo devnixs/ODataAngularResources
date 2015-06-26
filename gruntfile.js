@@ -123,7 +123,9 @@ module.exports = function(grunt) {
     grunt.loadNpmTasks('grunt-contrib-jasmine');
     grunt.loadNpmTasks('grunt-contrib-watch');
     grunt.loadNpmTasks("grunt-ts");
-    grunt.registerTask('default', ['jshint', 'concat', 'uglify', 'jasmine:pivotal']);
+
+
+    grunt.registerTask('default', ['ts','jshint', 'concat', 'uglify', 'jasmine:pivotal']);
     grunt.registerTask('build', ['concat', 'uglify']);
     grunt.registerTask('test', ['jshint', 'jasmine:pivotal']);
     grunt.registerTask('testandcover', ['jshint', 'jasmine:cover', 'coveralls']);
