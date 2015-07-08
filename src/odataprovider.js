@@ -114,7 +114,14 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			success = success || angular.noop;
 			error = error || angular.noop;
 
-			return this.callback("("+data+")", success, error,true);
+			// The query string from this.execute() should be included even
+			//  when fetching just a single element.
+			var queryString = this.execute();
+			if(queryString.length > 0) {
+				queryString = "?"+queryString;
+			}
+
+			return this.callback("("+data+")"+queryString, success, error,true);
 		};
 
 		ODataProvider.prototype.expand = function(params) {
