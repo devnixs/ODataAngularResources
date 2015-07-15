@@ -362,12 +362,39 @@ myUsers[0].$update();
  * Or provide it as a property of the 4th argument.
 ```javascript
 User = $odataresource('/user', {},{},{odatakey : 'id'});
-var myUsers = User.odata.query();
+var myUser = new User();
 
-//... later
-myUsers[0].$update();
+myUser.$save();
+//Will issue a POST /user
+
+myUser.$update();
 //Will issue a PUT /user(1)
+
+myUser.$delete();
+//Will issue a DELETE /user(1)
 ```
+
+#### Expand and Odata v4
+
+With odatav4 expanding nested entities is done with a different query
+```
+/user?$expand=Order/Items
+```
+becomes
+```
+/user?$expand=Order($expand=Items)
+```
+To enable this behavior set the isodatav4 property to true when invoking the $odataresource method:
+```javascript
+User = $odataresource('/user', {}, {}, {
+    odatakey: 'id',
+    isodatav4: true
+});
+
+var result = User.odata().expand("roles", "role").query();
+//  /user?$expand=roles($expand=role)
+```
+
 
 
 ### Build from the source
