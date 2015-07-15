@@ -382,158 +382,142 @@ factory('$odataPredicate', ['$odataBinaryOperation',function(ODataBinaryOperatio
 }]);
 ;angular.module('ODataResources').
 factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement',
-	function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement) {
-		var ODataProvider = function(callback) {
-			this.callback = callback;
+    function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement) {
+        var ODataProvider = function(callback, isv4) {
+            this.callback = callback;
+            this.filters = [];
+            this.sortOrders = [];
+            this.takeAmount = undefined;
+            this.skipAmount = undefined;
+            this.expandables = [];
+            this.isv4 = isv4;
+        };
+        ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
+            if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
+            var predicate;
+            if (angular.isFunction(operand1.execute) && operand2 === undefined) {
+                predicate = operand1;
+            } else {
+                predicate = new ODataBinaryOperation(operand1, operand2, operand3);
+            }
+            this.filters.push(predicate);
+            return this;
+        };
+        ODataProvider.prototype.orderBy = function(arg1, arg2) {
+            this.sortOrders.push(new ODataOrderByStatement(arg1, arg2));
+            return this;
+        };
+        ODataProvider.prototype.take = function(amount) {
+            this.takeAmount = amount;
+            return this;
+        };
+        ODataProvider.prototype.skip = function(amount) {
+            this.skipAmount = amount;
+            return this;
+        };
+        ODataProvider.prototype.execute = function() {
+            var queryString = '';
+            var i;
+            if (this.filters.length > 0) {
+                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
+            }
+            if (this.sortOrders.length > 0) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$orderby=";
+                for (i = 0; i < this.sortOrders.length; i++) {
+                    if (i > 0) {
+                        queryString += ",";
+                    }
+                    queryString += this.sortOrders[i].execute();
+                }
+            }
+            if (this.takeAmount) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$top=" + this.takeAmount;
+            }
+            if (this.skipAmount) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$skip=" + this.skipAmount;
+            }
+            if (this.expandables.length > 0) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$expand=";
+                for (i = 0; i < this.expandables.length; i++) {
+                    if (i > 0) {
+                        queryString += ",";
+                    }
+                    queryString += this.expandables[i];
+                }
+            }
+            return queryString;
+        };
+        ODataProvider.prototype.query = function(success, error) {
+            if (!angular.isFunction(this.callback)) throw "Cannot execute query, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            return this.callback(this.execute(), success, error);
+        };
+        ODataProvider.prototype.single = function(data, success, error) {
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            return this.callback(this.execute(), success, error, true, true);
+        };
+        ODataProvider.prototype.get = function(data, success, error) {
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            // The query string from this.execute() should be included even
+            //  when fetching just a single element.
+            var queryString = this.execute();
+            if (queryString.length > 0) {
+                queryString = "?" + queryString;
+            }
+            return this.callback("(" + data + ")" + queryString, success, error, true);
+        };
 
-			this.filters = [];
-			this.sortOrders = [];
-			this.takeAmount = undefined;
-			this.skipAmount = undefined;
-			this.expandables = [];
-		};
+        var expandOdatav4 = function(navigationProperties){
+        	var first = navigationProperties.shift();
+        	var current = first;
+        	if(navigationProperties.length>0){
+        		current = current + "($expand="+expandOdatav4(navigationProperties)+")";
+        	}
+        	return current;
+        };
 
-		ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
-			if (operand1 === undefined)
-				throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
-
-			var predicate;
-			if (angular.isFunction(operand1.execute) && operand2 === undefined) {
-				predicate = operand1;
-			} else {
-				predicate = new ODataBinaryOperation(operand1, operand2, operand3);
-			}
-			this.filters.push(predicate);
-			return this;
-		};
-
-		ODataProvider.prototype.orderBy = function(arg1, arg2) {
-			this.sortOrders.push(new ODataOrderByStatement(arg1, arg2));
-			return this;
-		};
-
-		ODataProvider.prototype.take = function(amount) {
-			this.takeAmount = amount;
-			return this;
-		};
-		ODataProvider.prototype.skip = function(amount) {
-			this.skipAmount = amount;
-			return this;
-		};
-
-		ODataProvider.prototype.execute = function() {
-			var queryString = '';
-			var i;
-			if (this.filters.length > 0) {
-				queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
-			}
-
-			if (this.sortOrders.length > 0) {
-				if (queryString !== "") queryString += "&";
-
-				queryString += "$orderby=";
-				for (i = 0; i < this.sortOrders.length; i++) {
-					if (i > 0) {
-						queryString += ",";
-					}
-					queryString += this.sortOrders[i].execute();
-				}
-			}
-
-			if (this.takeAmount) {
-				if (queryString !== "") queryString += "&";
-				queryString += "$top=" + this.takeAmount;
-			}
+        ODataProvider.prototype.expand = function(params) {
+            if (!angular.isString(params) && !angular.isArray(params)) {
+                throw "Invalid parameter passed to expand method (" + params + ")";
+            }
+            if (params === "") {
+                return;
+            }
+            var expandQuery = params;
+            if (this.isv4) {
+            	//Make it an array
+            	if (!angular.isArray(params)) {
+                    params = Array.prototype.slice.call(arguments);
+                }
+                expandQuery = expandOdatav4(params);
 
 
-			if (this.skipAmount) {
-				if (queryString !== "") queryString += "&";
-				queryString += "$skip=" + this.skipAmount;
-			}
+            } else {
+                if (angular.isArray(params)) {
+                    expandQuery = params.join('/');
+                } else {
+                    expandQuery = Array.prototype.slice.call(arguments).join('/');
+                }
+                for (var i = 0; i < this.expandables.length; i++) {
+                    if (this.expandables[i] === expandQuery) return this;
+                }
+            }
 
-
-			if (this.expandables.length > 0) {
-				if (queryString !== "") queryString += "&";
-
-				queryString += "$expand=";
-				for (i = 0; i < this.expandables.length; i++) {
-					if (i > 0) {
-						queryString += ",";
-					}
-					queryString += this.expandables[i];
-				}
-			}
-
-			return queryString;
-		};
-
-		ODataProvider.prototype.query = function(success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute query, no callback was specified";
-
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			return this.callback(this.execute(), success, error);
-		};
-
-
-		ODataProvider.prototype.single = function(data,success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute get, no callback was specified";
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			return this.callback(this.execute(), success, error,true,true);
-		};
-
-		ODataProvider.prototype.get = function(data,success, error) {
-			if (!angular.isFunction(this.callback))
-				throw "Cannot execute get, no callback was specified";
-
-			success = success || angular.noop;
-			error = error || angular.noop;
-
-			// The query string from this.execute() should be included even
-			//  when just fetching a single element.
-			var queryString = this.execute();
-			if(queryString.length > 0) {
-				queryString = "?"+queryString;
-			}
-
-			return this.callback("("+data+")"+queryString, success, error,true);
-		};
-
-		ODataProvider.prototype.expand = function(params) {
-			if(!angular.isString(params) && !angular.isArray(params)){
-				throw "Invalid parameter passed to expand method ("+params+")";
-			}
-			if(params===""){
-				return;
-			}
-
-			var expandQuery = params;
-			if(angular.isArray(params)){
-				expandQuery = params.join('/');
-			}else{
-				expandQuery = Array.prototype.slice.call(arguments).join('/');
-			}
-
-			for (var i = 0; i < this.expandables.length; i++) {
-				if(this.expandables[i]===expandQuery)
-					return this;
-			}
-
-			this.expandables.push(expandQuery);
-			return this;
-		};
-
-		return ODataProvider;
-	}
-]);
-;/**
+            this.expandables.push(expandQuery);
+            return this;
+        };
+        return ODataProvider;
+    }
+]);;/**
  * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT
@@ -685,7 +669,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
 
             if (url === self.template &&
-              (config.method === 'PUT' || (config.method == 'GET' && !isOData) || config.method == 'PATCH') && angular.isString(self.defaults.odatakey)) {
+              (config.method === 'PUT' ||
+              config.method === 'DELETE' ||
+              (config.method == 'GET' && !isOData) ||
+              config.method == 'PATCH')
+              && angular.isString(self.defaults.odatakey)) {
               
             // strip trailing slashes and set the url (unless this behavior is specifically disabled)
             if (self.defaults.stripTrailingSlashes) {
@@ -980,7 +968,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             };
 
 
-            return new $odata.Provider(onQuery);
+            return new $odata.Provider(onQuery,options.isodatav4);
           };
 
           Resource.bind = function(additionalParamDefaults) {

@@ -150,7 +150,11 @@
 
 
             if (url === self.template &&
-              (config.method === 'PUT' || (config.method == 'GET' && !isOData) || config.method == 'PATCH') && angular.isString(self.defaults.odatakey)) {
+              (config.method === 'PUT' ||
+              config.method === 'DELETE' ||
+              (config.method == 'GET' && !isOData) ||
+              config.method == 'PATCH')
+              && angular.isString(self.defaults.odatakey)) {
               
             // strip trailing slashes and set the url (unless this behavior is specifically disabled)
             if (self.defaults.stripTrailingSlashes) {
@@ -445,7 +449,7 @@
             };
 
 
-            return new $odata.Provider(onQuery);
+            return new $odata.Provider(onQuery,options.isodatav4);
           };
 
           Resource.bind = function(additionalParamDefaults) {
