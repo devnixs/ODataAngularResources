@@ -672,8 +672,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
               (config.method === 'PUT' ||
               config.method === 'DELETE' ||
               (config.method == 'GET' && !isOData) ||
-              config.method == 'PATCH')
-              && angular.isString(self.defaults.odatakey)) {
+              config.method == 'PATCH') && angular.isString(self.defaults.odatakey)) {
               
             // strip trailing slashes and set the url (unless this behavior is specifically disabled)
             if (self.defaults.stripTrailingSlashes) {
