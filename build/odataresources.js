@@ -496,7 +496,14 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 			success = success || angular.noop;
 			error = error || angular.noop;
 
-			return this.callback("("+data+")", success, error,true);
+			// The query string from this.execute() should be included even
+			//  when just fetching a single element.
+			var queryString = this.execute();
+			if(queryString.length > 0) {
+				queryString = "?"+queryString;
+			}
+
+			return this.callback("("+data+")"+queryString, success, error,true);
 		};
 
 		ODataProvider.prototype.expand = function(params) {
@@ -525,7 +532,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
 		return ODataProvider;
 	}
-]);;/**
+]);
+;/**
  * @license AngularJS v1.3.15
  * (c) 2010-2014 Google, Inc. http://angularjs.org
  * License: MIT

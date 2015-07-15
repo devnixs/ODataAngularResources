@@ -257,6 +257,16 @@
 				expect(user).toBeDefined();
 			});
 
+			it('should allow querying only one element with expand', function() {
+				var User = $odataresource('/user/:userId', {
+					userId: '@id'
+				});
+
+				$httpBackend.expectGET("/user(2)?$expand=Orders").respond(200);
+				var user = User.odata().expand('Orders').get(2);
+				expect(user).toBeDefined();
+			});
+
 			it('should return an object', function() {
 				var User = $odataresource('/user/:userId', {
 					userId: '@id'
