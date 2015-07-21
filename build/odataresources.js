@@ -923,7 +923,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                   }
 
                   // jshint +W018
-                  if (!isSingleElement && action.isArray) {
+                  if (!isSingleElement && action.isArray && isNaN(parseInt(data))) {
                     value.length = 0;
                     forEach(data, function(item) {
                       if (typeof item === "object") {
@@ -943,6 +943,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
                 if(angular.isNumber(data) && isSingleElement){
                   value.result = data;
+                }
+                else if(angular.isNumber(parseInt(data)) && isSingleElement){
+                  value.result = parseInt(data);
                 }
 
                 value.$resolved = true;

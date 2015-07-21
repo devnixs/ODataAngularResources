@@ -125,6 +125,15 @@
                 $httpBackend.flush();
                 expect(result.result).toBe(25);
             });
+
+
+            it('should query with count and filters with strings', function() {
+                $httpBackend.expectGET("/user/$count/?$filter=name eq 'bob'").respond(200, '85');
+                var result = User.odata().filter('name','bob').count();
+                $httpBackend.flush();
+                expect(result.result).toBe(85);
+            });
+
             it('should query with inline count', function() {
                 $httpBackend.expectGET("/user?$inlinecount").respond(200, {
                     "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
