@@ -391,6 +391,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.skipAmount = undefined;
             this.expandables = [];
             this.isv4 = isv4;
+            this.hasInlineCount = false;
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -449,6 +450,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     queryString += this.expandables[i];
                 }
             }
+
+
+            if (this.hasInlineCount > 0) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$inlinecount";
+            }
+
             return queryString;
         };
         ODataProvider.prototype.query = function(success, error) {
@@ -474,6 +482,25 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 queryString = "?" + queryString;
             }
             return this.callback("(" + data + ")" + queryString, success, error, true);
+        };
+
+        ODataProvider.prototype.count = function(data, success, error) {
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            success = success || angular.noop;
+            error = error || angular.noop;
+            // The query string from this.execute() should be included even
+            //  when fetching just a single element.
+            var queryString = this.execute();
+            if (queryString.length > 0) {
+                queryString = "/?" + queryString;
+            }
+
+            return this.callback("/$count"+queryString, success, error, true);
+        };
+
+        ODataProvider.prototype.withInlineCount = function() {
+            this.hasInlineCount = true;
+            return this;
         };
 
         var expandOdatav4 = function(navigationProperties){
@@ -876,6 +903,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                   }
                 }
 
+
                 if (data) {
                   // Need to convert action.isArray to boolean in case it is undefined
                   // jshint -W018
@@ -911,6 +939,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     shallowClearAndCopy(data, value);
                     value.$promise = promise;
                   }
+                }
+
+                if(angular.isNumber(data) && isSingleElement){
+                  value.result = data;
                 }
 
                 value.$resolved = true;

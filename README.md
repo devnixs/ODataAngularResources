@@ -99,6 +99,36 @@ var myUsers =   User.odata()
 - Multiple chained filters are executed with **and** between.
 - orderBy assumes the order to be asc if the second parameter is not specified.
 
+### Count and InlineCount
+- It's possible to query the number of elements
+```javascript
+                var data = User.odata().filter('name','bob').count();
+                    
+//Queries /user/$count/?$filter=name eq 'bob'
+// data.result == 25
+```
+- You can also ask for an inline count to have the count aside with the data
+```javascript
+                var users = User.odata().withInlineCount().query();
+                
+//Queries /user?$inlinecount
+// users is an array but also contains the count property
+// The server may reply by
+// {
+//     "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+//     "value": [{
+//         name: 'Test',
+//         id: 1,
+//     }, {
+//         name: 'Foo',
+//         id: 2,
+//     }],
+//     'count': 10
+// }
+// And then, the count will be defined as followed
+// users.count == 10
+```
+
 ###Including related models (expanding)
 * You can easily include related models by calling the expand method
 ```javascript

@@ -110,6 +110,44 @@
                 expect(error).not.toHaveBeenCalled();
             });
             
+
+            it('should query with count', function() {
+                $httpBackend.expectGET("/user/$count").respond(200, 15);
+                User.odata().count();
+                $httpBackend.flush();
+                expect(1).toBe(1);
+            });
+
+
+            it('should query with count and filters', function() {
+                $httpBackend.expectGET("/user/$count/?$filter=name eq 'bob'").respond(200, 25);
+                var result = User.odata().filter('name','bob').count();
+                $httpBackend.flush();
+                expect(result.result).toBe(25);
+            });
+            it('should query with inline count', function() {
+                $httpBackend.expectGET("/user?$inlinecount").respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [{
+                        name: 'Test',
+                        id: 1,
+                    }, {
+                        name: 'Foo',
+                        id: 2,
+                    }, {
+                        name: 'Bar',
+                        id: 3,
+                    }],
+                    'count': 10
+                });
+                User.odata().withInlineCount().query();
+                $httpBackend.flush();
+                expect(1).toBe(1);
+            });
+
+
+
+
             it('should query with expand', function() {
                 $httpBackend.expectGET("/user?$expand=City/Country,Orders").respond(200, [1, 2]);
                 User.odata().expand("City", "Country").expand("Orders").query();

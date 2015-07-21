@@ -357,6 +357,7 @@
                   }
                 }
 
+
                 if (data) {
                   // Need to convert action.isArray to boolean in case it is undefined
                   // jshint -W018
@@ -392,6 +393,10 @@
                     shallowClearAndCopy(data, value);
                     value.$promise = promise;
                   }
+                }
+
+                if(angular.isNumber(data) && isSingleElement){
+                  value.result = data;
                 }
 
                 value.$resolved = true;
