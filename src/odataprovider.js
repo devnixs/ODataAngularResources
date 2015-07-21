@@ -102,7 +102,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             return this.callback("(" + data + ")" + queryString, success, error, true);
         };
 
-        ODataProvider.prototype.count = function(data, success, error) {
+        ODataProvider.prototype.count = function(success, error) {
             if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
