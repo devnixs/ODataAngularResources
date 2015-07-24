@@ -156,6 +156,20 @@
 
 
 
+            it('should not have a result property when querying normally', function() {
+                $httpBackend.expectGET("/user(1)").respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": {
+                        name: 'Test',
+                        id: 1,
+                    }
+                });
+                var user = User.odata().get(1);
+                $httpBackend.flush();
+                expect(user.result).not.toBeDefined();
+            });
+
+
 
             it('should query with expand', function() {
                 $httpBackend.expectGET("/user?$expand=City/Country,Orders").respond(200, [1, 2]);

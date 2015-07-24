@@ -944,7 +944,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 if(angular.isNumber(data) && isSingleElement){
                   value.result = data;
                 }
-                else if(angular.isNumber(parseInt(data)) && isSingleElement){
+                else if(!isNaN(parseInt(data)) && isSingleElement){
                   value.result = parseInt(data);
                 }
 
