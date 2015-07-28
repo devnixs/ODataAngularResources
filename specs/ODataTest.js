@@ -215,6 +215,10 @@
                 var value = new $odata.Value(new Date("06/02/2015 10:23"));
                 expect(value.execute()).toBe("datetime'2015-06-02T10:23:00'");
             });
+            it('should work with dates with odatav4', function() {
+                var value = new $odata.Value(new Date("06/02/2015 10:23"));
+                expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
+            });
             describe('with type specified', function() {
                 describe('From number', function() {
                     it('To decimal', function() {
@@ -259,6 +263,10 @@
                         var value = new $odata.Value(1433267403614, 'Datetime');
                         expect(value.execute()).toMatch(/datetime'2015-06-02T/);
                     });
+                    it('To datetime with odatav4', function() {
+                        var value = new $odata.Value(1433267403614, 'Datetime');
+                        expect(value.execute(true)).toMatch(/^2015-06-02T.+Z/);
+                    });
                     it('To guid', function() {
                         expect(function() {
                             var value = new $odata.Value(1433267403614300, 'Guid');
@@ -301,6 +309,14 @@
                         var value = new $odata.Value(new Date(1433267403614), 'string');
                         expect(value.execute()).toBe("'2015-06-02T17:50:03.614Z'");
                     });
+                    it('To datetime', function() {
+                        var value = new $odata.Value(1433267403614, 'Datetime');
+                        expect(value.execute()).toMatch(/datetime'2015-06-02T/);
+                    });
+                    it('To datetime with odatav4', function() {
+                        var value = new $odata.Value(1433267403614, 'Datetime');
+                        expect(value.execute(true)).toMatch(/^2015-06-02T.+Z/);
+                    });
                     it('to bool', function() {
                         expect(function() {
                             var value = new $odata.Value(new Date(1433267403614), 'Boolean');
@@ -340,6 +356,10 @@
                     it('To Datetime', function() {
                         var value = new $odata.Value("2015/06/02", 'Datetime');
                         expect(value.execute()).toBe("datetime'2015-06-02T00:00:00'");
+                    });
+                    it('To datetime with odatav4', function() {
+                        var value = new $odata.Value("2015/06/02", 'Datetime');
+                        expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
                     });
                     it('To Decimal', function() {
                         var value = new $odata.Value('10.5', 'Decimal');

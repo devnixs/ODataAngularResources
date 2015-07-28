@@ -38,7 +38,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             var queryString = '';
             var i;
             if (this.filters.length > 0) {
-                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
+                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true,this.isv4);
             }
             if (this.sortOrders.length > 0) {
                 if (queryString !== "") queryString += "&";

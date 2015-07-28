@@ -73,11 +73,15 @@ factory('$odataValue', [
             this.type = type;
         };
 
-        var generateDate = function(date){
-        	return "datetime'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "'";
+        var generateDate = function(date,isOdataV4){
+        	if(!isOdataV4){
+        		return "datetime'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "'";
+        	}else{
+        		return date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "Z";
+        	}
         };
 
-        ODataValue.prototype.executeWithUndefinedType = function() {
+        ODataValue.prototype.executeWithUndefinedType = function(isOdataV4) {
             if (angular.isString(this.value)) {
                 return "'" + escapeIllegalChars(this.value) + "'";
             } else if (this.value === false) {
@@ -85,7 +89,7 @@ factory('$odataValue', [
             } else if (this.value === true) {
                 return "true";
             } else if (angular.isDate(this.value)) {
-                return generateDate(this.value);
+                return generateDate(this.value,isOdataV4);
             } else if (!isNaN(this.value)) {
                 return this.value;
             } else {
@@ -93,7 +97,7 @@ factory('$odataValue', [
             }
         };
 
-        ODataValue.prototype.executeWithType = function(){
+        ODataValue.prototype.executeWithType = function(isOdataV4){
         	if(this.value === true || this.value === false){
 	        	if(this.type.toLowerCase() === "boolean"){
 	        		return !!this.value+"";
@@ -113,7 +117,7 @@ factory('$odataValue', [
 	        	}else if(this.type.toLowerCase() === "double"){
 	        		return this.value.getTime()+"d";
 	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(this.value);
+	        		return generateDate(this.value,isOdataV4);
 	        	}else if(this.type.toLowerCase()==="string"){
 	        		return "'"+this.value.toISOString()+"'";
 	        	}else {
@@ -124,7 +128,7 @@ factory('$odataValue', [
 	        	if(this.type.toLowerCase() === "guid"){
 	        		return "guid'"+this.value+"'";
 	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(new Date(this.value));
+	        		return generateDate(new Date(this.value),isOdataV4);
 	        	}else if(this.type.toLowerCase() === "single"){
 	        		return parseFloat(this.value)+"f";
 	        	}else if(this.type.toLowerCase() === "double"){
@@ -150,7 +154,7 @@ factory('$odataValue', [
 	        	}else if(this.type.toLowerCase() === "byte"){
 	        		return (this.value%255).toString(16);
 	        	}else if(this.type.toLowerCase() === "datetime"){
-	        		return generateDate(new Date(this.value));
+	        		return generateDate(new Date(this.value),isOdataV4);
 	        	}else if(this.type.toLowerCase() === "string"){
 	        		return "'"+this.value+"'";
 	        	}else {
@@ -162,11 +166,11 @@ factory('$odataValue', [
         	}
         };
 
-        ODataValue.prototype.execute = function() {
+        ODataValue.prototype.execute = function(isOdataV4) {
             if (this.type === undefined) {
-            	return this.executeWithUndefinedType();
+            	return this.executeWithUndefinedType(isOdataV4);
             } else {
-            	return this.executeWithType();
+            	return this.executeWithType(isOdataV4);
             }
         };
         return ODataValue;
@@ -228,8 +232,8 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 	};
 
 
-	ODataBinaryOperation.prototype.execute = function(noParenthesis){
-		var result = this.operandA.execute()+" "+this.filterOperator+" " +this.operandB.execute();
+	ODataBinaryOperation.prototype.execute = function(noParenthesis,isODatav4){
+		var result = this.operandA.execute(isODatav4)+" "+this.filterOperator+" " +this.operandB.execute(isODatav4);
 		if(!noParenthesis)
 			result = "("+result+")";
 
@@ -420,7 +424,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             var queryString = '';
             var i;
             if (this.filters.length > 0) {
-                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true);
+                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true,this.isv4);
             }
             if (this.sortOrders.length > 0) {
                 if (queryString !== "") queryString += "&";

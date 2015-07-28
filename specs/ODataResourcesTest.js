@@ -639,6 +639,26 @@
                     $httpBackend.flush();
                     expect(1).toBe(1);
                 });
+
+
+                it('should query with odata v4 datetime', function() {
+                    User = $odataresource('/user', {}, {}, {
+                        odatakey: 'id',
+                        isodatav4: true
+                    });
+                    $httpBackend.expectGET("/user(1)?$filter=date eq 2015-07-28T10:23:00Z").respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": {
+                            name: 'Test',
+                            id: 1,
+                        },
+                        'count': 10
+                    });
+                    var result = User.odata().filter("date", new $odata.Value(new Date("07/28/2015 10:23"))).get(1);
+
+                    $httpBackend.flush();
+                    expect(1).toBe(1);
+                });
             });
         });
     });
