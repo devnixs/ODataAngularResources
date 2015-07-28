@@ -530,14 +530,14 @@
                     new $odata.BinaryOperation("Name", "Raphael"),
                     new $odata.BinaryOperation("Age", 23),
                 ]);
-                expect(predicate.execute(true)).toBe("(Name eq 'Raphael') and (Age eq 23)");
+                expect(predicate.execute(undefined,true)).toBe("(Name eq 'Raphael') and (Age eq 23)");
             });
             it('should generate or statements', function() {
                 var predicate = $odata.Predicate.or([
                     new $odata.BinaryOperation("Name", "Raphael"),
                     new $odata.BinaryOperation("Age", 23),
                 ]);
-                expect(predicate.execute(true)).toBe("(Name eq 'Raphael') or (Age eq 23)");
+                expect(predicate.execute(undefined,true)).toBe("(Name eq 'Raphael') or (Age eq 23)");
             });
             it('should throw if passed empty array', function() {
                 expect(function() {
@@ -562,7 +562,7 @@
                     new $odata.BinaryOperation("Name", "Raphael"),
                     new $odata.BinaryOperation("Age", 23),
                 ]);
-                expect(predicate.execute(true)).toBe("(Name eq 'Raphael') and (Age eq 23)");
+                expect(predicate.execute(undefined,true)).toBe("(Name eq 'Raphael') and (Age eq 23)");
             });
             it('should allow combining predicates with other predicates', function() {
                 var predicate = $odata.Predicate.and([
@@ -573,22 +573,22 @@
                     predicate,
                     new $odata.Predicate("Age", 25),
                 ]);
-                expect(predicate2.execute(true)).toBe("((Name eq 'Raphael') and (Age eq 23)) or (Age eq 25)");
+                expect(predicate2.execute(undefined,true)).toBe("((Name eq 'Raphael') and (Age eq 23)) or (Age eq 25)");
             });
             describe('.create', function() {
                 it('Generates a binary operator', function() {
                     var predicate = $odata.Predicate.create("A", "=", "b");
-                    expect(predicate.execute(true)).toBe("A eq 'b'");
+                    expect(predicate.execute(undefined,true)).toBe("A eq 'b'");
                 });
             });
             describe('.or', function() {
                 it('Should allow or chaining with explicit operation', function() {
                     var predicate = $odata.Predicate.create("A", "=", "b").or(new $odata.BinaryOperation("Name", "eq", 'test'));
-                    expect(predicate.execute(true)).toBe("(A eq 'b') or (Name eq 'test')");
+                    expect(predicate.execute(undefined,true)).toBe("(A eq 'b') or (Name eq 'test')");
                 });
                 it('Should allow or chaining with unexplicit operation', function() {
                     var predicate = $odata.Predicate.create("A", "=", "b").or("Name", 'test');
-                    expect(predicate.execute(true)).toBe("(A eq 'b') or (Name eq 'test')");
+                    expect(predicate.execute(undefined,true)).toBe("(A eq 'b') or (Name eq 'test')");
                 });
                 it('Should throw if passed an array', function() {
                     expect(function() {
@@ -599,11 +599,11 @@
             describe('.and', function() {
                 it('Should allow and chaining with explicit operation', function() {
                     var predicate = $odata.Predicate.create("A", "=", "b").and(new $odata.BinaryOperation("Name", "eq", 'test'));
-                    expect(predicate.execute(true)).toBe("(A eq 'b') and (Name eq 'test')");
+                    expect(predicate.execute(undefined,true)).toBe("(A eq 'b') and (Name eq 'test')");
                 });
                 it('Should allow and chaining with unexplicit operation', function() {
                     var predicate = $odata.Predicate.create("A", "=", "b").and("Name", 'test');
-                    expect(predicate.execute(true)).toBe("(A eq 'b') and (Name eq 'test')");
+                    expect(predicate.execute(undefined,true)).toBe("(A eq 'b') and (Name eq 'test')");
                 });
                 it('Should throw if passed an array', function() {
                     expect(function() {

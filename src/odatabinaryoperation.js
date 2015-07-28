@@ -43,7 +43,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 	};
 
 
-	ODataBinaryOperation.prototype.execute = function(noParenthesis,isODatav4){
+	ODataBinaryOperation.prototype.execute = function(isODatav4,noParenthesis){
 		var result = this.operandA.execute(isODatav4)+" "+this.filterOperator+" " +this.operandB.execute(isODatav4);
 		if(!noParenthesis)
 			result = "("+result+")";

@@ -232,7 +232,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 	};
 
 
-	ODataBinaryOperation.prototype.execute = function(noParenthesis,isODatav4){
+	ODataBinaryOperation.prototype.execute = function(isODatav4,noParenthesis){
 		var result = this.operandA.execute(isODatav4)+" "+this.filterOperator+" " +this.operandB.execute(isODatav4);
 		if(!noParenthesis)
 			result = "("+result+")";
@@ -424,7 +424,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             var queryString = '';
             var i;
             if (this.filters.length > 0) {
-                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(true,this.isv4);
+                queryString = "$filter=" + ODataPredicate.and(this.filters).execute(this.isv4,true);
             }
             if (this.sortOrders.length > 0) {
                 if (queryString !== "") queryString += "&";
