@@ -396,6 +396,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.expandables = [];
             this.isv4 = isv4;
             this.hasInlineCount = false;
+            this.selectables = [];
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -446,13 +447,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             }
             if (this.expandables.length > 0) {
                 if (queryString !== "") queryString += "&";
-                queryString += "$expand=";
-                for (i = 0; i < this.expandables.length; i++) {
-                    if (i > 0) {
-                        queryString += ",";
-                    }
-                    queryString += this.expandables[i];
-                }
+                queryString += "$expand="+ this.expandables.join(',');
+            }
+            if(this.selectables.length>0){
+                if (queryString !== "") queryString += "&";
+                queryString += "$select=" + this.selectables.join(',');
             }
 
 
@@ -546,6 +545,30 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.expandables.push(expandQuery);
             return this;
         };
+
+
+        ODataProvider.prototype.select = function(params) {
+            if (!angular.isString(params) && !angular.isArray(params)) {
+                throw "Invalid parameter passed to select method (" + params + ")";
+            }
+
+            if (params === "") {
+                return;
+            }
+
+            var selectQuery = params;
+
+            if (!angular.isArray(params)) {
+                params = Array.prototype.slice.call(arguments);
+            }   
+
+            for (var i = params.length - 1; i >= 0; i--) {
+                    this.selectables.push(params[i]);
+            }   
+
+            return this;
+        };
+
         return ODataProvider;
     }
 ]);;/**

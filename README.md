@@ -160,6 +160,19 @@ var myUsers =   User.odata()
                     
 //Queries /user?$expand=City,Orders
 ```
+###Pick a subset of the properties (Selecting)
+* You can use the select method to retrieve only some properties of the entities.
+```javascript
+            var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                });
+                
+                var users = User.odata().select(['name','userId']).query();
+                //OR
+                var users = User.odata().select('name','userId').query();
+                    
+//Queries /user?$select=userId,name
+```
 
 ###Specifying a custom url and method
 * Want a custom url for your odata queries? easy! It works just like angular resources:

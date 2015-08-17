@@ -338,6 +338,44 @@
                 expect(user.$save).toBeDefined();
             });
         });
+        describe('Resources queried with select', function() {
+            it('should work with one selected property', function() {
+            var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                });
+                $httpBackend.expectGET("/user?$select=name").respond(200,[{userId:5,name:'bob'}]);
+                var users = User.odata().select('name').query();
+                expect(angular.isArray(users)).toBe(true);
+                $httpBackend.flush();
+            });
+            it('should work with two selected property', function() {
+            var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                });
+                $httpBackend.expectGET("/user?$select=userId,name").respond(200,[{userId:5,name:'bob'}]);
+                var users = User.odata().select('name','userId').query();
+                expect(angular.isArray(users)).toBe(true);
+                $httpBackend.flush();
+            });
+            it('should work with two selected property in an array', function() {
+            var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                });
+                $httpBackend.expectGET("/user?$select=userId,name").respond(200,[{userId:5,name:'bob'}]);
+                var users = User.odata().select(['name','userId']).query();
+                expect(angular.isArray(users)).toBe(true);
+                $httpBackend.flush();
+            });
+            it('should work with after multiple calls', function() {
+            var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                });
+                $httpBackend.expectGET("/user?$select=userId,name").respond(200,[{userId:5,name:'bob'}]);
+                var users = User.odata().select('userId').select('name').query();
+                expect(angular.isArray(users)).toBe(true);
+                $httpBackend.flush();
+            });
+        });
         describe('OData v4 not explicitly specified', function() {
             var User;
             beforeEach(function() {});
