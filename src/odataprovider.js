@@ -72,7 +72,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             if (this.hasInlineCount > 0) {
                 if (queryString !== "") queryString += "&";
-                queryString += "$inlinecount";
+                queryString += "$inlinecount=allpages";
             }
 
             return queryString;

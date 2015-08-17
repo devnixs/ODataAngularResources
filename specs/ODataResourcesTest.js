@@ -135,7 +135,7 @@
             });
 
             it('should query with inline count', function() {
-                $httpBackend.expectGET("/user?$inlinecount").respond(200, {
+                $httpBackend.expectGET("/user?$inlinecount=allpages").respond(200, {
                     "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
                     "value": [{
                         name: 'Test',
