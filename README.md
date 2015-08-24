@@ -459,7 +459,7 @@ var result = User.odata().expand("roles", "role").query();
 // }
 // And then, the count will be defined as followed
 // users.count == 10
-
+```
 
 ### Build from the source
 
