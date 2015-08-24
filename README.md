@@ -438,7 +438,7 @@ var result = User.odata().expand("roles", "role").query();
 //  /user?$expand=roles($expand=role)
 ```
 ### InlineCount with OData v4
-```
+
 - With OData v4 inlinecount issues a $count=true parameter
 ```javascript
                 var users = User.odata().withInlineCount().query();
