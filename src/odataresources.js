@@ -346,6 +346,10 @@
                 var data = response.data,
                   promise = value.$promise;
 
+                if(data && angular.isNumber(data['@odata.count'])) {
+                    data.count = data['@odata.count'];
+                }
+
                 if (data && angular.isString(data['@odata.context']) && data.value) {
                   var fullObject = data;
                   data = data.value;

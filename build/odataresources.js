@@ -457,7 +457,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             if (this.hasInlineCount > 0) {
                 if (queryString !== "") queryString += "&";
-                queryString += "$inlinecount=allpages";
+                queryString += this.isv4 ? "$count=true" : "$inlinecount=allpages";
             }
 
             return queryString;
@@ -918,6 +918,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
               var promise = $http(httpConfig).then(function(response) {
                 var data = response.data,
                   promise = value.$promise;
+
+                if(data && angular.isNumber(data['@odata.count'])) {
+                    data.count = data['@odata.count'];
+                }
 
                 if (data && angular.isString(data['@odata.context']) && data.value) {
                   var fullObject = data;
