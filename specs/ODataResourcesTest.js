@@ -154,6 +154,27 @@
                 expect(1).toBe(1);
             });
 
+            it('should query with inline count', function() {
+                $httpBackend.expectGET("/user?$filter=Name eq 'Foo'&$inlinecount=allpages").respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [{
+                        name: 'Test',
+                        id: 1,
+                    }, {
+                        name: 'Foo',
+                        id: 2,
+                    }, {
+                        name: 'Bar',
+                        id: 3,
+                    }],
+                    'count': 10
+                });
+                User.odata().filter('Name','Foo').withInlineCount().query();
+                $httpBackend.flush();
+                expect(1).toBe(1);
+            });
+
+
 
 
             it('should not have a result property when querying normally', function() {
@@ -241,6 +262,26 @@
             it('should call the right url', function() {
                 $httpBackend.expectPOST("/myCustomUrl").respond(200);
                 User.odata().query();
+                $httpBackend.flush();
+                expect(1).toBe(1);
+            });
+        });
+        describe('Select', function() {
+            var User;
+            beforeEach(function() {
+                User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                }, {
+                    odata: {
+                        method: 'POST',
+                        url: '/myCustomUrl'
+                    }
+                });
+            });
+            
+            it('should call the right url', function() {
+                $httpBackend.expectPOST("/myCustomUrl?$filter=Name eq 'Bob'&$select=Name").respond(200);
+                User.odata().filter('Name','Bob').select('Name').query();
                 $httpBackend.flush();
                 expect(1).toBe(1);
             });
@@ -592,7 +633,7 @@
         describe('OData v4 explicitly specified', function() {
             var User;
             beforeEach(function() {});
-            describe('should do the expand in a odata v4 way', function() {
+            describe('', function() {
                 
                 it('with query and 1 nested element', function() {
                     User = $odataresource('/user', {}, {}, {
@@ -696,6 +737,26 @@
 
                     $httpBackend.flush();
                     expect(1).toBe(1);
+                });
+
+
+                it('should query with odata v4 inlinecount', function() {
+                    User = $odataresource('/user', {}, {}, {
+                        odatakey: 'id',
+                        isodatav4: true
+                    });
+                    $httpBackend.expectGET("/user?$count=true").respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "@odata.count":2,
+                        "value": [{
+                            name: 'Test',
+                            id: 1,
+                        }]
+                    });
+                    var data = User.odata().withInlineCount().query();
+
+                    $httpBackend.flush();
+                    expect(data.count).toBe(2);
                 });
 
                 it('should query with nested odata v4 datetime', function() {

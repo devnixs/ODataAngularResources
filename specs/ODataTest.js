@@ -219,6 +219,11 @@
                 var value = new $odata.Value(new Date("06/02/2015 10:23"));
                 expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
             });
+
+            it('should work with dates with odatav4 and specified type', function() {
+                var value = new $odata.Value(new Date("06/02/2015 10:23"),'datetime');
+                expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
+            });
             describe('with type specified', function() {
                 describe('From number', function() {
                     it('To decimal', function() {
@@ -627,6 +632,36 @@
                 finalPredicate = $odata.Predicate.and([orResult, predicate3]);
                 provider.filter(finalPredicate);
                 expect(provider.execute(true)).toBe("$filter=(((Name eq 'Raphael') and (Age eq 23)) or ((Name eq 'Anais') and (Age gt 20))) and (substringof('Spider',CompanyName) eq true)");
+            });
+            describe('Select', function() {
+                var provider;
+                beforeEach(function() {
+                    provider = new $odata.Provider();
+                });
+                it('should throw if sent undefined', function() {
+                    expect(function(){
+                        provider.select(undefined);
+                    }).toThrow();
+                });
+
+                it('should not do anything if sent ""', function() {
+                    expect(provider.select("")).not.toBeDefined();
+                });
+            });
+            describe('Count', function() {
+                var provider;
+                beforeEach(function() {
+                    provider = new $odata.Provider();
+                });
+                it('should throw if no callback are specified', function() {
+                    expect(function(){
+                        provider.count(undefined);
+                    }).toThrow();
+                });
+
+                it('should not do anything if sent ""', function() {
+                    expect(provider.select("")).not.toBeDefined();
+                });
             });
             describe('Expand', function() {
                 var provider;

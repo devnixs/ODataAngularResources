@@ -475,7 +475,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             return this.callback(this.execute(), success, error, true, true);
         };
         ODataProvider.prototype.get = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even

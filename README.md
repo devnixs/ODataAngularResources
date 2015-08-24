@@ -111,7 +111,7 @@ var myUsers =   User.odata()
 ```javascript
                 var users = User.odata().withInlineCount().query();
                 
-//Queries /user?$inlinecount
+//Queries /user?$inlinecount=allpages
 // users is an array but also contains the count property
 // The server may reply by
 // {
@@ -437,7 +437,28 @@ User = $odataresource('/user', {}, {}, {
 var result = User.odata().expand("roles", "role").query();
 //  /user?$expand=roles($expand=role)
 ```
-
+### InlineCount with OData v4
+```
+- With OData v4 inlinecount issues a $count=true parameter
+```javascript
+                var users = User.odata().withInlineCount().query();
+                
+//Queries /user?$count=true
+// users is an array but also contains the count property
+// The server may reply by
+// {
+//     "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+//     "@odata.count":10,
+//     "value": [{
+//         name: 'Test',
+//         id: 1,
+//     }, {
+//         name: 'Foo',
+//         id: 2,
+//     }]
+// }
+// And then, the count will be defined as followed
+// users.count == 10
 
 
 ### Build from the source
