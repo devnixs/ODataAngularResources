@@ -11,6 +11,8 @@ It does everything Angular Resources does but add some features:
   - Allows filtering, skipping, ordering, expanding, and selecting only N elements (with top)
   - Able to generate complex queries with OR, AND and method calls
 
+[Simple JSFiddle Demo](http://jsfiddle.net/h22f7596/)
+
 ##How to install
 
 1. Download the repository or install the **bower package** : 
