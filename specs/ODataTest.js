@@ -352,7 +352,7 @@
                     });
                     it('To guid with odatav4', function() {
                         var value = new $odata.Value('12345678-aaaa-bbbb-cccc-ddddeeeeffff', 'Guid');
-                        expect(value.execute(true)).toMatch('12345678-aaaa-bbbb-cccc-ddddeeeeffff');
+                        expect(value.execute(true)).toMatch("12345678-aaaa-bbbb-cccc-ddddeeeeffff");
                     });
                     it('To Boolean true', function() {
                         var value = new $odata.Value('true', 'Boolean');
