@@ -80,6 +80,22 @@ factory('$odataValue', [
         		return date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "Z";
         	}
         };
+        
+        var generateGuid = function(guidValue, isOdataV4){
+            if(!isOdataV4){
+                return "guid'"+guidValue+"'";
+            }else{
+                return guidValue;
+            } 
+        };
+		
+		var generateDateOffset = function (date, isOdataV4) {
+            if (!isOdataV4) {
+                return "datetimeoffset'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "'";
+            } else {
+                return date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "Z";
+            }
+        };
 
         ODataValue.prototype.executeWithUndefinedType = function(isOdataV4) {
             if (angular.isString(this.value)) {
@@ -118,6 +134,8 @@ factory('$odataValue', [
 	        		return this.value.getTime()+"d";
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(this.value,isOdataV4);
+	        	} else if (this.type.toLowerCase() === "datetimeoffset") {
+	        	    return generateDateOffset(new Date(this.value), isOdataV4);					
 	        	}else if(this.type.toLowerCase()==="string"){
 	        		return "'"+this.value.toISOString()+"'";
 	        	}else {
@@ -126,9 +144,11 @@ factory('$odataValue', [
 	        }
 	        if(angular.isString(this.value)){
 	        	if(this.type.toLowerCase() === "guid"){
-	        		return "guid'"+this.value+"'";
+                    return generateGuid(this.value,isOdataV4);
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(new Date(this.value),isOdataV4);
+	        	} else if (this.type.toLowerCase() === "datetimeoffset") {
+	        	    return generateDateOffset(new Date(this.value), isOdataV4);					
 	        	}else if(this.type.toLowerCase() === "single"){
 	        		return parseFloat(this.value)+"f";
 	        	}else if(this.type.toLowerCase() === "double"){
