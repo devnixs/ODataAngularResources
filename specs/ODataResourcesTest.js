@@ -780,6 +780,24 @@
                     $httpBackend.flush();
                     expect(1).toBe(1);
                 });
+
+                it('shouldn\'t fail if the response contains a value property', function() {
+                    User = $odataresource('/user', {}, {}, {
+                        odatakey: 'id',
+                        isodatav4: true
+                    });
+                    $httpBackend.expectGET("/user(1)").respond(200, {
+                        '@odata.context': 'http://host/service/$metadata#Collection(Edm.String)',
+                        'value': 'test',
+                        'someOtherData':'foobar',
+                    });
+
+                    var result = User.odata().get(1);
+
+                    console.log('result',result);
+                    $httpBackend.flush();
+                    expect(result.value).toBe('test');
+                });
             });
         });
     });
