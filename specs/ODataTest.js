@@ -320,11 +320,11 @@
                     });
                     it('To datetime offset', function() {
                         var value = new $odata.Value(new Date(1433267403614), 'datetimeoffset');
-                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T10:50:03'/);
+                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T.+'/);
                     });
                     it('To datetime offset with odatav4', function() {
                         var value = new $odata.Value(new Date(1433267403614), 'datetimeoffset');
-                        expect(value.execute(true)).toMatch(/2015-06-02T10:50:03Z/);
+                        expect(value.execute(true)).toMatch(/2015-06-02T.+Z/);
                     });
                     it('To datetime with odatav4', function() {
                         var value = new $odata.Value(new Date(1433267403614), 'Datetime');
@@ -381,11 +381,11 @@
 
                     it('To datetime offset', function() {
                         var value = new $odata.Value("2015/06/02", 'datetimeoffset');
-                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T00:00:00'/);
+                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T.+'/);
                     });
                     it('To datetime offset with odatav4', function() {
                         var value = new $odata.Value("2015/06/02", 'datetimeoffset');
-                        expect(value.execute(true)).toMatch(/2015-06-02T00:00:00Z/);
+                        expect(value.execute(true)).toMatch(/2015-06-02T.+Z/);
                     });
                     it('To Decimal', function() {
                         var value = new $odata.Value('10.5', 'Decimal');
