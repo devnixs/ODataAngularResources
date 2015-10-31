@@ -187,6 +187,10 @@ factory('$odataValue', [
         };
 
         ODataValue.prototype.execute = function(isOdataV4) {
+            if(this.value === null){
+                return 'null';
+            }
+
             if (this.type === undefined) {
             	return this.executeWithUndefinedType(isOdataV4);
             } else {
@@ -194,6 +198,7 @@ factory('$odataValue', [
             }
         };
         return ODataValue;
+
     }
 ]);;angular.module('ODataResources').
 factory('$odataProperty', [function() {
@@ -227,7 +232,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 			}else{
 				this.operandA = new ODataProperty(a1);
 			}
-			if(angular.isFunction(a2.execute)){
+			if(a2!==null && angular.isFunction(a2.execute)){ 
 				this.operandB = a2;
 			}else{
 				this.operandB = new ODataValue(a2);
@@ -241,7 +246,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 			}else{
 				this.operandA = new ODataProperty(a1);
 			}
-			if(angular.isFunction(a3.execute)){
+			if(a3!==null && angular.isFunction(a3.execute)){
 				this.operandB = a3;
 			}else{
 				this.operandB = new ODataValue(a3);

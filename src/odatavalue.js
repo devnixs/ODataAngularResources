@@ -136,6 +136,10 @@ factory('$odataValue', [
         };
 
         ODataValue.prototype.execute = function(isOdataV4) {
+            if(this.value === null){
+                return 'null';
+            }
+
             if (this.type === undefined) {
             	return this.executeWithUndefinedType(isOdataV4);
             } else {
@@ -143,5 +147,6 @@ factory('$odataValue', [
             }
         };
         return ODataValue;
+
     }
 ]);
