@@ -4,7 +4,7 @@ angular.module('ODataResources').
   factory('$odataOperators', [function() {
 
       var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-      trim = function(value) {
+      var trim = function(value) {
         return value.replace(rtrim, '');
       };
         
