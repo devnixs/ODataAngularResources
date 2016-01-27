@@ -4,7 +4,7 @@ angular.module('ODataResources').
   factory('$odataOperators', [function() {
 
       var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-      trim = function(value) {
+      var trim = function(value) {
         return value.replace(rtrim, '');
       };
         
@@ -492,8 +492,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 queryString += this.isv4 ? "$count=true" : "$inlinecount=allpages";
             }
 
-            for (var i = 0; i < this.transformUrls.length; i++) {
-               var transform= this.transformUrls[i]
+            for (i = 0; i < this.transformUrls.length; i++) {
+               var transform= this.transformUrls[i];
                queryString = transform(queryString);
             }
 
