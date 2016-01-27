@@ -462,6 +462,20 @@ var result = User.odata().expand("roles", "role").query();
 // And then, the count will be defined as followed
 // users.count == 10
 ```
+### Transform the final query url
+
+- It is possible to transform the query that will be made to the server by calling the method transformUrl
+```javascript
+
+User.odata()
+    .filter("Name", "Raphael")
+    .transformUrl(function(url){
+        return url+'&foo=bar';
+    })
+    .query();
+
+// queries /user?$filter=Name eq 'Raphael'&foo=bar                    
+```
 
 ### Build from the source
 

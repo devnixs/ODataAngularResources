@@ -330,6 +330,29 @@
                 });
             });
         });
+        describe('Resource with param', function() {
+            var User;
+            beforeEach(function() {
+                User = $odataresource('/user', {});
+            });
+
+
+
+            it('should not append a ?', function() {
+                $httpBackend.expectGET("/user?$filter=Name eq 'Raphael'&foo=bar")
+                    .respond(200, [1, 2]);
+                User.odata()
+                    .filter("Name", "Raphael")
+                    .transformUrl(function(url){
+                        return url+'&foo=bar';
+                    })
+                    .query();
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+        });
         describe('Resource with customized url', function() {
             var User;
             beforeEach(function() {
