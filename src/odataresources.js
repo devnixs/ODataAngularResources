@@ -342,6 +342,11 @@
                 httpConfig.url += odataQueryString;
               }
 
+              //chieffancypants / angular-loading-bar
+              //https://github.com/chieffancypants/angular-loading-bar
+              if (options.ignoreLoadingBar)
+                httpConfig.ignoreLoadingBar = true;
+
               var promise = $http(httpConfig).then(function(response) {
                 var data = response.data,
                   promise = value.$promise;
