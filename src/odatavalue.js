@@ -14,7 +14,7 @@ factory('$odataValue', [
             for (var key in illegalChars) {
                 string = string.replace(key, illegalChars[key]);
             }
-            string = string.replace("'", "''");
+            string = string.replace(/'/g, "''");
             return string;
         };
         var ODataValue = function(input, type) {

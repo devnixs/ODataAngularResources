@@ -198,6 +198,10 @@
                 var value = new $odata.Value("'test");
                 expect(value.execute()).toBe("'''test'");
             });
+            it('should encode strings with multiple quotes', function() {
+                var value = new $odata.Value("'test' with multiple 'quotes'");
+                expect(value.execute()).toBe("'''test'' with multiple ''quotes'''");
+            });
             it('should work with true', function() {
                 var value = new $odata.Value(true);
                 expect(value.execute()).toBe("true");

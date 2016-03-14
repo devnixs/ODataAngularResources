@@ -65,7 +65,7 @@ factory('$odataValue', [
             for (var key in illegalChars) {
                 string = string.replace(key, illegalChars[key]);
             }
-            string = string.replace("'", "''");
+            string = string.replace(/'/g, "''");
             return string;
         };
         var ODataValue = function(input, type) {
@@ -953,6 +953,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 httpConfig.url += odataQueryString;
               }
 
+              //chieffancypants / angular-loading-bar
+              //https://github.com/chieffancypants/angular-loading-bar
+              if (options.ignoreLoadingBar)
+                httpConfig.ignoreLoadingBar = true;
+
               var promise = $http(httpConfig).then(function(response) {
                 var data = response.data,
                   promise = value.$promise;
@@ -1087,7 +1092,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
   });
 
 
-})(window, window.angular);;angular.module('ODataResources').
+})(window, window.angular);
+;angular.module('ODataResources').
 factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
 	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement',
 	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement) {
