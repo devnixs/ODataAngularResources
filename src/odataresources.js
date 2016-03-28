@@ -160,10 +160,14 @@
               url = url.replace(/\/+$/, '') || '/';
             }
 
-              url = url + '(:' + self.defaults.odatakey + ')';
+            var odatakeySplit = self.deafults.odatakey.split(',');
+            var splitKey = odatakeySplit.map(function (key) { return odatakeySplit.length > 1 ? key + '=:' + key : ':' + key; });
+            url = url + '(' + splitKey.join(',') + ')';
 
               if (data) {
-                params[self.defaults.odatakey] = data[self.defaults.odatakey];
+                  forEach(odatakeySplit, function (param) {
+                      params[param] = data[param];
+                  });
               }
             }
 
