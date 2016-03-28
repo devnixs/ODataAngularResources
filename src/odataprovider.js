@@ -12,6 +12,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.hasInlineCount = false;
             this.selectables = [];
             this.transformUrls=[];
+            this.formatBy = undefined;
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -40,6 +41,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
         };
         ODataProvider.prototype.skip = function(amount) {
             this.skipAmount = amount;
+            return this;
+        };
+        ODataProvider.prototype.format = function(format) {
+            this.formatBy = format;
             return this;
         };
         ODataProvider.prototype.execute = function() {
@@ -79,6 +84,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             if (this.hasInlineCount > 0) {
                 if (queryString !== "") queryString += "&";
                 queryString += this.isv4 ? "$count=true" : "$inlinecount=allpages";
+            }
+
+            if (this.formatBy) {
+                if (queryString !== "") queryString += "&";
+                queryString += "$format=" + this.formatBy;
             }
 
             for (i = 0; i < this.transformUrls.length; i++) {

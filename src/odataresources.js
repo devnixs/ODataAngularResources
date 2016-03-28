@@ -160,7 +160,7 @@
               url = url.replace(/\/+$/, '') || '/';
             }
 
-            var odatakeySplit = self.deafults.odatakey.split(',');
+            var odatakeySplit = self.defaults.odatakey.split(',');
             var splitKey = odatakeySplit.map(function (key) { return odatakeySplit.length > 1 ? key + '=:' + key : ':' + key; });
             url = url + '(' + splitKey.join(',') + ')';
 
