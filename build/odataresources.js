@@ -4,7 +4,7 @@ angular.module('ODataResources').
   factory('$odataOperators', [function() {
 
       var rtrim = /^[\s\uFEFF\xA0]+|[\s\uFEFF\xA0]+$/g;
-      trim = function(value) {
+      var trim = function(value) {
         return value.replace(rtrim, '');
       };
         
@@ -65,7 +65,7 @@ factory('$odataValue', [
             for (var key in illegalChars) {
                 string = string.replace(key, illegalChars[key]);
             }
-            string = string.replace("'", "''");
+            string = string.replace(/'/g, "''");
             return string;
         };
         var ODataValue = function(input, type) {
@@ -79,6 +79,22 @@ factory('$odataValue', [
         	}else{
         		return date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2)+':'+("0" + date.getSeconds()).slice(-2) + "Z";
         	}
+        };
+        
+        var generateGuid = function(guidValue, isOdataV4){
+            if(!isOdataV4){
+                return "guid'"+guidValue+"'";
+            }else{
+                return guidValue;
+            } 
+        };
+		
+		var generateDateOffset = function (date, isOdataV4) {
+            if (!isOdataV4) {
+                return "datetimeoffset'" + date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "'";
+            } else {
+                return date.getFullYear() + "-" + ("0" + (date.getMonth() + 1)).slice(-2) + "-" + ("0" + date.getDate()).slice(-2) + "T" + ("0" + date.getHours()).slice(-2) + ":" + ("0" + date.getMinutes()).slice(-2) + ':' + ("0" + date.getSeconds()).slice(-2) + "Z";
+            }
         };
 
         ODataValue.prototype.executeWithUndefinedType = function(isOdataV4) {
@@ -118,6 +134,8 @@ factory('$odataValue', [
 	        		return this.value.getTime()+"d";
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(this.value,isOdataV4);
+	        	} else if (this.type.toLowerCase() === "datetimeoffset") {
+	        	    return generateDateOffset(new Date(this.value), isOdataV4);					
 	        	}else if(this.type.toLowerCase()==="string"){
 	        		return "'"+this.value.toISOString()+"'";
 	        	}else {
@@ -126,9 +144,11 @@ factory('$odataValue', [
 	        }
 	        if(angular.isString(this.value)){
 	        	if(this.type.toLowerCase() === "guid"){
-	        		return "guid'"+this.value+"'";
+                    return generateGuid(this.value,isOdataV4);
 	        	}else if(this.type.toLowerCase() === "datetime"){
 	        		return generateDate(new Date(this.value),isOdataV4);
+	        	} else if (this.type.toLowerCase() === "datetimeoffset") {
+	        	    return generateDateOffset(new Date(this.value), isOdataV4);					
 	        	}else if(this.type.toLowerCase() === "single"){
 	        		return parseFloat(this.value)+"f";
 	        	}else if(this.type.toLowerCase() === "double"){
@@ -167,6 +187,10 @@ factory('$odataValue', [
         };
 
         ODataValue.prototype.execute = function(isOdataV4) {
+            if(this.value === null){
+                return 'null';
+            }
+
             if (this.type === undefined) {
             	return this.executeWithUndefinedType(isOdataV4);
             } else {
@@ -174,6 +198,7 @@ factory('$odataValue', [
             }
         };
         return ODataValue;
+
     }
 ]);;angular.module('ODataResources').
 factory('$odataProperty', [function() {
@@ -207,7 +232,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 			}else{
 				this.operandA = new ODataProperty(a1);
 			}
-			if(angular.isFunction(a2.execute)){
+			if(a2!==null && angular.isFunction(a2.execute)){ 
 				this.operandB = a2;
 			}else{
 				this.operandB = new ODataValue(a2);
@@ -221,7 +246,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 			}else{
 				this.operandA = new ODataProperty(a1);
 			}
-			if(angular.isFunction(a3.execute)){
+			if(a3!==null && angular.isFunction(a3.execute)){
 				this.operandB = a3;
 			}else{
 				this.operandB = new ODataValue(a3);
@@ -397,6 +422,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.isv4 = isv4;
             this.hasInlineCount = false;
             this.selectables = [];
+            this.transformUrls=[];
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -409,6 +435,12 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.filters.push(predicate);
             return this;
         };
+
+        ODataProvider.prototype.transformUrl = function(transformMethod) {
+            this.transformUrls.push(transformMethod);
+            return this;
+        };
+
         ODataProvider.prototype.orderBy = function(arg1, arg2) {
             this.sortOrders.push(new ODataOrderByStatement(arg1, arg2));
             return this;
@@ -460,6 +492,12 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 queryString += this.isv4 ? "$count=true" : "$inlinecount=allpages";
             }
 
+            for (i = 0; i < this.transformUrls.length; i++) {
+               var transform= this.transformUrls[i];
+               queryString = transform(queryString);
+            }
+
+
             return queryString;
         };
         ODataProvider.prototype.query = function(success, error) {
@@ -475,7 +513,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             return this.callback(this.execute(), success, error, true, true);
         };
         ODataProvider.prototype.get = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
@@ -915,6 +953,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 httpConfig.url += odataQueryString;
               }
 
+              //chieffancypants / angular-loading-bar
+              //https://github.com/chieffancypants/angular-loading-bar
+              if (options.ignoreLoadingBar)
+                httpConfig.ignoreLoadingBar = true;
+
               var promise = $http(httpConfig).then(function(response) {
                 var data = response.data,
                   promise = value.$promise;
@@ -923,7 +966,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     data.count = data['@odata.count'];
                 }
 
-                if (data && angular.isString(data['@odata.context']) && data.value) {
+                if (data && angular.isString(data['@odata.context']) && data.value && angular.isArray(data.value)) {
                   var fullObject = data;
                   data = data.value;
                   for (var property in fullObject) {
@@ -1049,7 +1092,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
   });
 
 
-})(window, window.angular);;angular.module('ODataResources').
+})(window, window.angular);
+;angular.module('ODataResources').
 factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
 	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement',
 	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement) {

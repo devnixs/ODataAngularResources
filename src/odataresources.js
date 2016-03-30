@@ -342,6 +342,11 @@
                 httpConfig.url += odataQueryString;
               }
 
+              //chieffancypants / angular-loading-bar
+              //https://github.com/chieffancypants/angular-loading-bar
+              if (options.ignoreLoadingBar)
+                httpConfig.ignoreLoadingBar = true;
+
               var promise = $http(httpConfig).then(function(response) {
                 var data = response.data,
                   promise = value.$promise;
@@ -350,7 +355,7 @@
                     data.count = data['@odata.count'];
                 }
 
-                if (data && angular.isString(data['@odata.context']) && data.value) {
+                if (data && angular.isString(data['@odata.context']) && data.value && angular.isArray(data.value)) {
                   var fullObject = data;
                   data = data.value;
                   for (var property in fullObject) {

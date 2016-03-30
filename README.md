@@ -11,6 +11,8 @@ It does everything Angular Resources does but add some features:
   - Allows filtering, skipping, ordering, expanding, and selecting only N elements (with top)
   - Able to generate complex queries with OR, AND and method calls
 
+[Simple JSFiddle Demo](http://jsfiddle.net/h22f7596/)
+
 ##How to install
 
 1. Download the repository or install the **bower package** : 
@@ -111,7 +113,7 @@ var myUsers =   User.odata()
 ```javascript
                 var users = User.odata().withInlineCount().query();
                 
-//Queries /user?$inlinecount
+//Queries /user?$inlinecount=allpages
 // users is an array but also contains the count property
 // The server may reply by
 // {
@@ -437,8 +439,43 @@ User = $odataresource('/user', {}, {}, {
 var result = User.odata().expand("roles", "role").query();
 //  /user?$expand=roles($expand=role)
 ```
+### InlineCount with OData v4
 
+- With OData v4 inlinecount issues a $count=true parameter
+```javascript
+                var users = User.odata().withInlineCount().query();
+                
+//Queries /user?$count=true
+// users is an array but also contains the count property
+// The server may reply by
+// {
+//     "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+//     "@odata.count":10,
+//     "value": [{
+//         name: 'Test',
+//         id: 1,
+//     }, {
+//         name: 'Foo',
+//         id: 2,
+//     }]
+// }
+// And then, the count will be defined as followed
+// users.count == 10
+```
+### Transform the final query url
 
+- It is possible to transform the query that will be made to the server by calling the method transformUrl
+```javascript
+
+User.odata()
+    .filter("Name", "Raphael")
+    .transformUrl(function(url){
+        return url+'&foo=bar';
+    })
+    .query();
+
+// queries /user?$filter=Name eq 'Raphael'&foo=bar                    
+```
 
 ### Build from the source
 

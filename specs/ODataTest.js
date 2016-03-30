@@ -198,6 +198,10 @@
                 var value = new $odata.Value("'test");
                 expect(value.execute()).toBe("'''test'");
             });
+            it('should encode strings with multiple quotes', function() {
+                var value = new $odata.Value("'test' with multiple 'quotes'");
+                expect(value.execute()).toBe("'''test'' with multiple ''quotes'''");
+            });
             it('should work with true', function() {
                 var value = new $odata.Value(true);
                 expect(value.execute()).toBe("true");
@@ -217,6 +221,11 @@
             });
             it('should work with dates with odatav4', function() {
                 var value = new $odata.Value(new Date("06/02/2015 10:23"));
+                expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
+            });
+
+            it('should work with dates with odatav4 and specified type', function() {
+                var value = new $odata.Value(new Date("06/02/2015 10:23"),'datetime');
                 expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
             });
             describe('with type specified', function() {
@@ -313,8 +322,16 @@
                         var value = new $odata.Value(1433267403614, 'Datetime');
                         expect(value.execute()).toMatch(/datetime'2015-06-02T/);
                     });
+                    it('To datetime offset', function() {
+                        var value = new $odata.Value(new Date(1433267403614), 'datetimeoffset');
+                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T.+'/);
+                    });
+                    it('To datetime offset with odatav4', function() {
+                        var value = new $odata.Value(new Date(1433267403614), 'datetimeoffset');
+                        expect(value.execute(true)).toMatch(/2015-06-02T.+Z/);
+                    });
                     it('To datetime with odatav4', function() {
-                        var value = new $odata.Value(1433267403614, 'Datetime');
+                        var value = new $odata.Value(new Date(1433267403614), 'Datetime');
                         expect(value.execute(true)).toMatch(/^2015-06-02T.+Z/);
                     });
                     it('to bool', function() {
@@ -345,6 +362,10 @@
                         var value = new $odata.Value('12345678-aaaa-bbbb-cccc-ddddeeeeffff', 'Guid');
                         expect(value.execute()).toBe("guid'12345678-aaaa-bbbb-cccc-ddddeeeeffff'");
                     });
+                    it('To guid with odatav4', function() {
+                        var value = new $odata.Value('12345678-aaaa-bbbb-cccc-ddddeeeeffff', 'Guid');
+                        expect(value.execute(true)).toMatch("12345678-aaaa-bbbb-cccc-ddddeeeeffff");
+                    });
                     it('To Boolean true', function() {
                         var value = new $odata.Value('true', 'Boolean');
                         expect(value.execute()).toBe("true");
@@ -360,6 +381,15 @@
                     it('To datetime with odatav4', function() {
                         var value = new $odata.Value("2015/06/02", 'Datetime');
                         expect(value.execute(true)).toMatch(/^2015-06-02T.+Z$/);
+                    });
+
+                    it('To datetime offset', function() {
+                        var value = new $odata.Value("2015/06/02", 'datetimeoffset');
+                        expect(value.execute()).toMatch(/datetimeoffset'2015-06-02T.+'/);
+                    });
+                    it('To datetime offset with odatav4', function() {
+                        var value = new $odata.Value("2015/06/02", 'datetimeoffset');
+                        expect(value.execute(true)).toMatch(/2015-06-02T.+Z/);
                     });
                     it('To Decimal', function() {
                         var value = new $odata.Value('10.5', 'Decimal');
@@ -627,6 +657,36 @@
                 finalPredicate = $odata.Predicate.and([orResult, predicate3]);
                 provider.filter(finalPredicate);
                 expect(provider.execute(true)).toBe("$filter=(((Name eq 'Raphael') and (Age eq 23)) or ((Name eq 'Anais') and (Age gt 20))) and (substringof('Spider',CompanyName) eq true)");
+            });
+            describe('Select', function() {
+                var provider;
+                beforeEach(function() {
+                    provider = new $odata.Provider();
+                });
+                it('should throw if sent undefined', function() {
+                    expect(function(){
+                        provider.select(undefined);
+                    }).toThrow();
+                });
+
+                it('should not do anything if sent ""', function() {
+                    expect(provider.select("")).not.toBeDefined();
+                });
+            });
+            describe('Count', function() {
+                var provider;
+                beforeEach(function() {
+                    provider = new $odata.Provider();
+                });
+                it('should throw if no callback are specified', function() {
+                    expect(function(){
+                        provider.count(undefined);
+                    }).toThrow();
+                });
+
+                it('should not do anything if sent ""', function() {
+                    expect(provider.select("")).not.toBeDefined();
+                });
             });
             describe('Expand', function() {
                 var provider;
