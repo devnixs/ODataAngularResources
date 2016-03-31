@@ -42,9 +42,7 @@ factory('$odataExpandPredicate', [function () {
         if (tableName === undefined) {
             throw "ExpandPredicate.expand should be passed a table name but got undefined.";
         }
-
-        new ODataExpandPredicate(tableName, this).finish();
-        return this;
+        return new ODataExpandPredicate(tableName, this).finish();
     };
 
     ODataExpandPredicate.prototype.expandPredicate = function (tableName) {
@@ -70,8 +68,6 @@ factory('$odataExpandPredicate', [function () {
 
     ODataExpandPredicate.prototype.finish = function () {
         var query = this.build();
-        if (this.expandables.some(function (value) { return value === query; }))
-            return this;
         this.context.expandables.push(query);
         return this.context;
     };
