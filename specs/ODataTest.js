@@ -59,7 +59,7 @@
             describe('Select', function () {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        new $odata.ExpandPredicate('Name', this).select();
+                        (new $odata.ExpandPredicate('Name', this)).select();
                     }).toThrow();
                 });
                 it('should support selecting nested expanded tables', function () {
@@ -78,14 +78,14 @@
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        new $odata.ExpandPredicate('Name', this).expand();
+                        (new $odata.ExpandPredicate('Name', this)).expand();
                     }).toThrow();
                 });
             });
             describe('ExpandPredicate', function () {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        new $odata.ExpandPredicate('Name', this).expandPredicate();
+                        (new $odata.ExpandPredicate('Name', this)).expandPredicate();
                     }).toThrow();
                 });
             });
