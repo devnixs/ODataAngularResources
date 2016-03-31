@@ -297,6 +297,81 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 }
 
 ]);;angular.module('ODataResources').
+factory('$odataExpandPredicate', [function () {
+
+    var ODataExpandPredicate = function (tableName, context) {
+        if (tableName === undefined) {
+            throw "ExpandPredicate should be passed a table name but got undefined.";
+        }
+
+        if (context === undefined) {
+            throw "ExpandPredicate should be passed a context but got undefined.";
+        }
+
+        this.name = tableName;
+        this.expandables = []; // To maintain recursion compatibility with base OdataResourceProvider
+        this.options = {
+            select: [],
+            expand: this.expandables,
+        };
+        this.context = context;
+    };
+
+    ODataExpandPredicate.prototype.select = function (propertyName) {
+        if (propertyName === undefined) {
+            throw "ExpandPredicate.select should be passed a property name but got undefined.";
+        }
+
+        if (!angular.isArray(propertyName))
+            propertyName = propertyName.split(',');
+
+        for (var i = 0; i < propertyName.length; i++) {
+            if (!this.options.select.some(function (value) { return value === propertyName[i]; }))
+                this.options.select.push(propertyName[i]);
+        }
+        return this;
+    };
+
+    ODataExpandPredicate.prototype.expand = function (tableName) {
+        if (tableName === undefined) {
+            throw "ExpandPredicate.expand should be passed a table name but got undefined.";
+        }
+
+        new ODataExpandPredicate(tableName, this).finish();
+        return this;
+    };
+
+    ODataExpandPredicate.prototype.expandPredicate = function (tableName) {
+        if (tableName === undefined) {
+            throw "ExpandPredicate.expandPredicate should be passed a table name but got undefined.";
+        }
+        return new ODataExpandPredicate(tableName, this);
+    };
+
+    ODataExpandPredicate.prototype.build = function () {
+        var query = this.name;
+        var sub = [];
+        for (var option in this.options) {
+            if (this.options[option].length) {
+                sub.push("$" + option + "=" + this.options[option].join(','));
+            }
+        }
+        if (sub.length) {
+            query += "(" + sub.join(';') + ")";
+        }
+        return query;
+    };
+
+    ODataExpandPredicate.prototype.finish = function () {
+        var query = this.build();
+        if (this.expandables.some(function (value) { return value === query; }))
+            return this;
+        this.context.expandables.push(query);
+        return this.context;
+    };
+
+    return ODataExpandPredicate;
+}]);;angular.module('ODataResources').
 factory('$odataMethodCall', ['$odataProperty', '$odataValue',
     function(ODataProperty, ODataValue) {
 
@@ -410,8 +485,8 @@ factory('$odataPredicate', ['$odataBinaryOperation',function(ODataBinaryOperatio
 
 }]);
 ;angular.module('ODataResources').
-factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement',
-    function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement) {
+factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement', '$odataExpandPredicate',
+    function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement, ODataExpandPredicate) {
         var ODataProvider = function(callback, isv4) {
             this.callback = callback;
             this.filters = [];
@@ -592,6 +667,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             this.expandables.push(expandQuery);
             return this;
+        };
+
+        ODataProvider.prototype.expandPredicate = function(tableName) {
+            return new ODataExpandPredicate(tableName, this);
         };
 
 
@@ -1109,8 +1188,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 })(window, window.angular);
 ;angular.module('ODataResources').
 factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
-	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement',
-	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement) {
+	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement','$odataExpandPredicate',
+	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement,ODataExpandPredicate) {
 
 		return {
 			Provider : ODataProvider,
@@ -1120,6 +1199,7 @@ factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
 			Func : ODataMethodCall,
 			Predicate : ODataPredicate,
 			OrderBy : ODataOrderByStatement,
+            ExpandPredicate : ODataExpandPredicate,
 		};
 
 	}]);

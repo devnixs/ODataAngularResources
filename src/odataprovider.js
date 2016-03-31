@@ -1,6 +1,6 @@
 angular.module('ODataResources').
-factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement',
-    function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement) {
+factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement', '$odataExpandPredicate',
+    function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement, ODataExpandPredicate) {
         var ODataProvider = function(callback, isv4) {
             this.callback = callback;
             this.filters = [];
@@ -181,6 +181,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             this.expandables.push(expandQuery);
             return this;
+        };
+
+        ODataProvider.prototype.expandPredicate = function(tableName) {
+            return new ODataExpandPredicate(tableName, this);
         };
 
 

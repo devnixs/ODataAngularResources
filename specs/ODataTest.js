@@ -40,6 +40,50 @@
                 expect(sortOrder.execute()).toBe("Name desc");
             });
         });
+        describe('ExpandPredicate', function() {
+            it('should throw if passed undefined', function() {
+                expect(function() {
+                    new $odata.ExpandPredicate();
+                }).toThrow();
+                expect(function() {
+                    new $odata.ExpandPredicate('Name');
+                }).toThrow();
+            });
+            it('should return a new context', function() {
+                var provider = new $odata.Provider();
+                var predicate = provider.expandPredicate('Name');
+                expect(provider).not.toBe(predicate);
+            });
+            it('should return previous context upon calling finish', function() {
+                var provider = new $odata.Provider();
+                var predicate = provider.expandPredicate('Name');
+                expect(provider).toBe(predicate.finish());
+            });
+            it('should support nesting contexts', function() {
+                var provider = new $odata.Provider();
+                var nest1 = provider.expandPredicate('Nest1');
+                var nest2 = nest1.expandPredicate('Nest2');
+                expect(nest1).not.toBe(nest2);
+                expect(nest1).toBe(nest2.finish());
+                expect(provider).toBe(nest1.finish());
+            });
+            it('should support selecting nested expanded tables', function () {
+                expect(new $odata.Provider().expandPredicate('table1').select('table1Prop1').finish().execute())
+                    .toBe('$expand=table1($select=table1Prop1)');
+            });
+            it('should support comma seperated select properties', function() {
+                expect(new $odata.Provider().expandPredicate('table1').select('tableProp1,tableProp2').finish().execute())
+                    .toBe('$expand=table1($select=tableProp1,tableProp2)');
+            });
+            it('should support array of select properties', function () {
+                expect(new $odata.Provider().expandPredicate('table1').select(['tableProp1','tableProp2']).finish().execute())
+                    .toBe('$expand=table1($select=tableProp1,tableProp2)');
+            });
+            it('should be chainable', function() {
+                expect(new $odata.Provider().expandPredicate('table1').select('table1Prop1').expand('table2').expandPredicate('table3').select('table3Prop1').finish().finish().execute())
+                    .toBe('$expand=table1($select=table1Prop1;$expand=table2,table3($select=table3Prop1))');
+            });
+        });
         describe("BinaryOperation", function() {
             it('should allow 3 parameters', function() {
                 var filter = new $odata.BinaryOperation("a", "eq", "c");
@@ -544,6 +588,23 @@
                     var provider = new $odata.Provider();
                     provider.take(10).skip(5);
                     expect(provider.execute()).toBe("$top=10&$skip=5");
+                });
+            });
+            describe('Format', function() {
+                it('should add to the property', function() {
+                    var provider = new $odata.Provider();
+                    provider.format('json');
+                    expect(provider.formatBy).toBe('json');
+                });
+                it('should be chainable', function () {
+                    var provider = new $odata.Provider();
+                    provider.format('json').filter("Name", "Raphael");
+                    expect(1).toBe(1);
+                });
+                it('should execute', function () {
+                    var provider = new $odata.Provider();
+                    provider.format('json').take(10).skip(5);
+                    expect(provider.execute()).toBe("$top=10&$skip=5&$format=json");
                 });
             });
         });
