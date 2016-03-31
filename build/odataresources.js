@@ -325,8 +325,12 @@ factory('$odataExpandPredicate', [function () {
         if (!angular.isArray(propertyName))
             propertyName = propertyName.split(',');
 
+        function checkArray(i, value) {
+            return value === propertyName[i];
+        }
+
         for (var i = 0; i < propertyName.length; i++) {
-            if (!this.options.select.some(function (value) { return value === propertyName[i]; }))
+            if (!this.options.select.some(checkArray.bind(this, i)))
                 this.options.select.push(propertyName[i]);
         }
         return this;
