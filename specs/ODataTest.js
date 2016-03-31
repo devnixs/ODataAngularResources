@@ -59,7 +59,7 @@
             describe('Select', function () {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        (new $odata.ExpandPredicate('Name', this)).select();
+						new $odata.Provider().expandPredicate('Name').select();
                     }).toThrow();
                 });
                 it('should support selecting nested expanded tables', function () {
@@ -74,18 +74,24 @@
                     expect(new $odata.Provider().expandPredicate('table1').select(['tableProp1', 'tableProp2']).finish().execute())
                         .toBe('$expand=table1($select=tableProp1,tableProp2)');
                 });
+				it('should not duplicate select properties', function () {
+                    expect(new $odata.Provider().expandPredicate('table1').select('table1Prop1,table1Prop1').finish().execute())
+                        .toBe('$expand=table1($select=table1Prop1)');
+					expect(new $odata.Provider().expandPredicate('table1').select(['table1Prop1','table1Prop1']).finish().execute())
+                        .toBe('$expand=table1($select=table1Prop1)');
+                });
             });
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        (new $odata.ExpandPredicate('Name', this)).expand();
+						new $odata.Provider().expandPredicate('Name').expand();
                     }).toThrow();
                 });
             });
             describe('ExpandPredicate', function () {
                 it('should throw if passed undefined', function () {
                     expect(function () {
-                        (new $odata.ExpandPredicate('Name', this)).expandPredicate();
+						new $odata.Provider().expandPredicate('Name').expandPredicate();
                     }).toThrow();
                 });
             });
@@ -594,7 +600,9 @@
                 });
                 it('should execute', function() {
                     var provider = new $odata.Provider();
-                    provider.take(10).filter("Name", "Raphael");
+					provider.take(10);
+					expect(provider.execute()).toBe("$top=10");
+                    provider.filter("Name", "Raphael");
                     expect(provider.execute()).toBe("$filter=Name eq 'Raphael'&$top=10");
                 });
             });
@@ -628,7 +636,9 @@
                 });
                 it('should execute', function () {
                     var provider = new $odata.Provider();
-                    provider.format('json').take(10).skip(5);
+                    provider.format('json');
+					expect(provider.execute()).toBe("$format=json");
+					provider.take(10).skip(5);
                     expect(provider.execute()).toBe("$top=10&$skip=5&$format=json");
                 });
             });

@@ -523,6 +523,7 @@
                 expect(user.$save)
                     .toBeDefined();
             });
+			
         });
         describe('Resources queried with select', function() {
             it('should work with one selected property', function() {
