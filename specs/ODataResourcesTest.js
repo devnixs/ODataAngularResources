@@ -523,6 +523,7 @@
                 expect(user.$save)
                     .toBeDefined();
             });
+			
         });
         describe('Resources queried with select', function() {
             it('should work with one selected property', function() {
@@ -695,6 +696,52 @@
                     .query();
                 $httpBackend.flush();
                 $httpBackend.expectPUT("/user(1)")
+                    .respond(200);
+                result[0].$update();
+                $httpBackend.flush();
+                console.log(result);
+                expect(result.count)
+                    .toBe(10);
+            });
+
+            it('should work with key\'s specified as comma seperated list in options', function () {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id,id2'
+                });
+                $httpBackend.expectGET("/user")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": [{
+                            name: 'Test',
+                            id: 1,
+                            id2: 1,
+                        },{
+                            name: 'Test2',
+                            id: 1,
+                            id2: 2,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                            id2: 1,
+                        }, {
+                            name: 'Foo2',
+                            id: 2,
+                            id2: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                            id2: 1,
+                        }, {
+                            name: 'Bar2',
+                            id: 3,
+                            id2: 2,
+                        }],
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .query();
+                $httpBackend.flush();
+                $httpBackend.expectPUT("/user(id=1,id2=1)")
                     .respond(200);
                 result[0].$update();
                 $httpBackend.flush();

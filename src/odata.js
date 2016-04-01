@@ -1,7 +1,7 @@
 angular.module('ODataResources').
 factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
-	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement',
-	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement) {
+	'$odataProperty','$odataMethodCall','$odataPredicate','$odataOrderByStatement','$odataExpandPredicate',
+	function(ODataBinaryOperation,ODataProvider,ODataValue,ODataProperty,ODataMethodCall,ODataPredicate,ODataOrderByStatement,ODataExpandPredicate) {
 
 		return {
 			Provider : ODataProvider,
@@ -11,6 +11,7 @@ factory('$odata', ['$odataBinaryOperation','$odataProvider','$odataValue',
 			Func : ODataMethodCall,
 			Predicate : ODataPredicate,
 			OrderBy : ODataOrderByStatement,
+            ExpandPredicate : ODataExpandPredicate,
 		};
 
 	}]);
