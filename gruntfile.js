@@ -48,6 +48,7 @@ module.exports = function(grunt) {
           "src/odatavalue.js",
           "src/odataproperty.js",
           "src/odatabinaryoperation.js",
+		  "src/odataexpandpredicate.js",
           "src/odatamethodcall.js",
           "src/odataorderbystatement.js",
           "src/odatapredicate.js",
