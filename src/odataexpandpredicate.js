@@ -1,5 +1,5 @@
 angular.module('ODataResources').
-factory('$odataExpandPredicate', [function () {
+factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {
@@ -14,9 +14,26 @@ factory('$odataExpandPredicate', [function () {
         this.expandables = []; // To maintain recursion compatibility with base OdataResourceProvider
         this.options = {
             select: [],
+            filter: [],
             expand: this.expandables,
         };
         this.context = context;
+    };
+
+    ODataExpandPredicate.prototype.filter = function(operand1, operand2, operand3) {
+        if (operand1 === undefined) throw "The first parameter is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
+
+        var predicate;
+
+        if (angular.isFunction(operand1.execute) && operand2 === undefined) {
+            predicate = operand1;
+        } else {
+            predicate = new ODataBinaryOperation(operand1, operand2, operand3);
+        }
+
+        this.options.filter.push(predicate);
+
+        return this;
     };
 
     ODataExpandPredicate.prototype.select = function (propertyName) {
@@ -57,7 +74,11 @@ factory('$odataExpandPredicate', [function () {
         var sub = [];
         for (var option in this.options) {
             if (this.options[option].length) {
-                sub.push("$" + option + "=" + this.options[option].join(','));
+                if (option === 'filter') {
+                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.isv4,true));
+                } else {
+                    sub.push("$" + option + "=" + this.options[option].join(','));
+                }
             }
         }
         if (sub.length) {
