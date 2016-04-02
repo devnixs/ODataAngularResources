@@ -81,6 +81,19 @@
                         .toBe('$expand=table1($select=table1Prop1)');
                 });
             });
+            describe('Filter', function () {
+                it('should throw if passed undefined', function () {
+                    expect(function () {
+                        new $odata.Provider().expandPredicate('Name').filter();
+                    }).toThrow();
+                });
+                it('should support filtering nested expanded tables', function () {
+                    var predicate = new $odata.Predicate("FirstName", "Bobby").and("LastName", "McGee");
+
+                    expect(new $odata.Provider().expandPredicate('table1').filter(predicate).finish().execute())
+                      .toBe("$expand=table1($filter=(FirstName eq 'Bobby') and (LastName eq 'McGee'))");
+                });
+            });
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
                     expect(function () {
