@@ -29,14 +29,33 @@ factory('$odataMethodCall', ['$odataProperty', '$odataValue',
         };
 
         ODataMethodCall.prototype.execute = function() {
-            var invocation = this.methodName + "(";
-            for (var i = 0; i < this.params.length; i++) {
-                if (i > 0)
-                    invocation += ",";
+            var lambdaOperators = ["any", "all"];
+            var invocation = "";
 
-                invocation += this.params[i].execute();
+            if(lambdaOperators.indexOf(this.methodName) > -1) {
+                for (var i = 0; i < this.params.length; i++) {
+                    if (i === 0) {
+                        var navigationPath = this.params[i].execute();
+                        var varName = navigationPath.charAt(0).toLowerCase();
+                        invocation += navigationPath + "/" + this.methodName + "(" + varName + ":" + varName + "/";
+                    } else {
+                        var expression = this.params[i].execute();
+                        invocation += expression.substring(1, expression.length-1);
+                        invocation += ")";
+                    }
+                }
+            } else {
+                invocation += this.methodName + "(";
+
+                for (var j = 0; j < this.params.length; j++) {
+                    if (j > 0)
+                        invocation += ",";
+
+                    invocation += this.params[j].execute();
+                }
+                invocation += ")";
             }
-            invocation += ")";
+
             return invocation;
         };
 

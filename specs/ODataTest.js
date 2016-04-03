@@ -265,6 +265,12 @@
                     var func = new $odata.Func("endswith", new $odata.Value("abc"), new $odata.Property("Name"));
                     expect(func.execute()).toBe("endswith('abc',Name)");
                 });
+                it('should allow lambda operator', function() {
+                    var predicate = new $odata.Predicate("firstName", "Bobby");
+                    var func = new $odata.Func("any", "clients", predicate);
+
+                    expect(func.execute()).toBe("clients/any(c:c/firstName eq 'Bobby')");
+                });
             });
         });
         describe('ODataProperty', function() {
