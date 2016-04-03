@@ -388,9 +388,6 @@ factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
     ODataExpandPredicate.prototype.finish = function () {
         var query = this.build();
         this.context.expandables.push(query);
-
-        console.log(this.context);
-
         return this.context;
     };
 
