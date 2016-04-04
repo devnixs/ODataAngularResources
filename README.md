@@ -361,17 +361,21 @@ bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.S
 ### Lambda Operators
 The **$odata.Func** class also supports the lambda operators **any** and **all**
 
-new $odata.Func(**MethodName**, **PropertyName**, **LambdaVariable**, **Expression**)
+new $odata.Func(**LambdaOperator**, **PropertyName**, **LambdaVariable**, **Expression**)
 
-The parameters are assumed to be first, a property, a lambda variable, and a boolean expression.
-The boolean expression must uses the lambda variable to refer to properties of the related entities identified by the navigation path.
+The parameters are assumed to be first, a lambda operator, a lambda variable, and a boolean expression.
+The boolean expression must use the lambda variable to refer to properties of the related entities identified by the navigation path.
 
 ```javascript
-var predicate = new $odata.Predicate('c/firstName', 'Bobby');
-var func = new $odata.Func('any', 'clients', 'c', predicate);
+var predicate1 = new $odata.Predicate("c/FirstName", "Bobby");
+var predicate2 = new $odata.Predicate("c/LastName", "McGee");
+//
+var combination = $odata.Predicate.and([predicate1,predicate2]);
+//
+var func = new $odata.Func('any', 'clients', 'c', combination);
 //
 Jobs.odata().filter(func).query();
-//Queries /Jobs?$filter=clients/any(c:(c/firstName eq 'Bobby'))
+//Queries /Jobs?$filter=clients/any(c:((c/FirstName eq 'Bobby') and (c/LastName eq 'McGee')))
 ```
 
 
