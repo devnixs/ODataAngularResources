@@ -429,12 +429,15 @@ factory('$odataMethodCall', ['$odataProperty', '$odataValue',
             if(lambdaOperators.indexOf(this.methodName) > -1) {
                 for (var i = 0; i < this.params.length; i++) {
                     if (i === 0) {
-                        var navigationPath = this.params[i].execute();
-                        var varName = navigationPath.charAt(0).toLowerCase();
-                        invocation += navigationPath + "/" + this.methodName + "(" + varName + ":" + varName + "/";
+                        invocation += this.params[i].execute();
+                        invocation += "/";
+                        invocation += this.methodName;
+                    } else if(i === 1) {
+                        invocation += "(";
+                        invocation += this.params[i].value;
+                        invocation += ":";
                     } else {
-                        var expression = this.params[i].execute();
-                        invocation += expression.substring(1, expression.length-1);
+                        invocation += this.params[i].execute();
                         invocation += ")";
                     }
                 }

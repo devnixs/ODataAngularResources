@@ -266,10 +266,10 @@
                     expect(func.execute()).toBe("endswith('abc',Name)");
                 });
                 it('should allow lambda operator', function() {
-                    var predicate = new $odata.Predicate("firstName", "Bobby");
-                    var func = new $odata.Func("any", "clients", predicate);
+                    var predicate = new $odata.Predicate("c/firstName", "Bobby");
+                    var func = new $odata.Func("any", "clients", "c", predicate);
 
-                    expect(func.execute()).toBe("clients/any(c:c/firstName eq 'Bobby')");
+                    expect(func.execute()).toBe("clients/any(c:(c/firstName eq 'Bobby'))");
                 });
             });
         });

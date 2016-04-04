@@ -357,9 +357,23 @@ double ceiling(double p0) | new $odata.Func('ceiling','Freight')  | 33d
 decimal ceiling(decimal p0) | new $odata.Func('floor','Freight')  | 33
 **Type Functions** | | 
 bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.String') | true
-**Lambda Functions** | | 
-bool any(string p0, expression p1) | new $odata.Func('any','Categories', $odata.Predicate("firstName", "Bobby")) | true
-bool all(string p0, expression p1) | new $odata.Func('any','Categories', $odata.Predicate("firstName", "Bobby")) | true
+
+### Lambda Operators
+The **$odata.Func** class also supports the lambda operators **any** and **all**
+
+new $odata.Func(**MethodName**, **PropertyName**, **LambdaVariable**, **Expression**)
+
+The parameters are assumed to be first, a property, a lambda variable, and a boolean expression.
+The boolean expression must uses the lambda variable to refer to properties of the related entities identified by the navigation path.
+
+```javascript
+var predicate = new $odata.Predicate('c/firstName', 'Bobby');
+var func = new $odata.Func('any', 'clients', 'c', predicate);
+//
+Jobs.odata().filter(func).query();
+//Queries /Jobs?$filter=clients/any(c:(c/firstName eq 'Bobby'))
+```
+
 
 ### OData V4 support 
 This project supports basic odata v4 queries and responses.
