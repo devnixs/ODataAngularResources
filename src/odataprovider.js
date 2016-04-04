@@ -1,7 +1,7 @@
 angular.module('ODataResources').
 factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement', '$odataExpandPredicate',
     function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement, ODataExpandPredicate) {
-        var ODataProvider = function(callback, isv4, reuse) {
+        var ODataProvider = function(callback, isv4) {
             this.callback = callback;
             this.filters = [];
             this.sortOrders = [];
@@ -13,8 +13,6 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.selectables = [];
             this.transformUrls=[];
             this.formatBy = undefined;
-            if (reuse)
-                this.reuse = reuse;
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -108,13 +106,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             return this.callback(this.execute(), success, error);
         };
         ODataProvider.prototype.single = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute single, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             return this.callback(this.execute(), success, error, true, true);
         };
         ODataProvider.prototype.get = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
@@ -127,7 +125,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
         };
 
         ODataProvider.prototype.count = function(success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
