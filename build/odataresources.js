@@ -297,7 +297,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 }
 
 ]);;angular.module('ODataResources').
-factory('$odataExpandPredicate', [function () {
+factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {
@@ -312,9 +312,26 @@ factory('$odataExpandPredicate', [function () {
         this.expandables = []; // To maintain recursion compatibility with base OdataResourceProvider
         this.options = {
             select: [],
+            filter: [],
             expand: this.expandables,
         };
         this.context = context;
+    };
+
+    ODataExpandPredicate.prototype.filter = function(operand1, operand2, operand3) {
+        if (operand1 === undefined) throw "The first parameter is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
+
+        var predicate;
+
+        if (angular.isFunction(operand1.execute) && operand2 === undefined) {
+            predicate = operand1;
+        } else {
+            predicate = new ODataBinaryOperation(operand1, operand2, operand3);
+        }
+
+        this.options.filter.push(predicate);
+
+        return this;
     };
 
     ODataExpandPredicate.prototype.select = function (propertyName) {
@@ -355,7 +372,11 @@ factory('$odataExpandPredicate', [function () {
         var sub = [];
         for (var option in this.options) {
             if (this.options[option].length) {
-                sub.push("$" + option + "=" + this.options[option].join(','));
+                if (option === 'filter') {
+                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.isv4,true));
+                } else {
+                    sub.push("$" + option + "=" + this.options[option].join(','));
+                }
             }
         }
         if (sub.length) {
@@ -402,14 +423,33 @@ factory('$odataMethodCall', ['$odataProperty', '$odataValue',
         };
 
         ODataMethodCall.prototype.execute = function() {
-            var invocation = this.methodName + "(";
-            for (var i = 0; i < this.params.length; i++) {
-                if (i > 0)
-                    invocation += ",";
+            var lambdaOperators = ["any", "all"];
+            var invocation = "";
 
-                invocation += this.params[i].execute();
+            if(lambdaOperators.indexOf(this.methodName) > -1) {
+                for (var i = 0; i < this.params.length; i++) {
+                    if (i === 0) {
+                        var navigationPath = this.params[i].execute();
+                        var varName = navigationPath.charAt(0).toLowerCase();
+                        invocation += navigationPath + "/" + this.methodName + "(" + varName + ":" + varName + "/";
+                    } else {
+                        var expression = this.params[i].execute();
+                        invocation += expression.substring(1, expression.length-1);
+                        invocation += ")";
+                    }
+                }
+            } else {
+                invocation += this.methodName + "(";
+
+                for (var j = 0; j < this.params.length; j++) {
+                    if (j > 0)
+                        invocation += ",";
+
+                    invocation += this.params[j].execute();
+                }
+                invocation += ")";
             }
-            invocation += ")";
+
             return invocation;
         };
 

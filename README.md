@@ -357,6 +357,9 @@ double ceiling(double p0) | new $odata.Func('ceiling','Freight')  | 33d
 decimal ceiling(decimal p0) | new $odata.Func('floor','Freight')  | 33
 **Type Functions** | | 
 bool IsOf(expression p0, type p1) | new $odata.Func('isof','ShipCountry', 'Edm.String') | true
+**Lambda Functions** | | 
+bool any(string p0, expression p1) | new $odata.Func('any','Categories', $odata.Predicate("firstName", "Bobby")) | true
+bool all(string p0, expression p1) | new $odata.Func('any','Categories', $odata.Predicate("firstName", "Bobby")) | true
 
 ### OData V4 support 
 This project supports basic odata v4 queries and responses.
