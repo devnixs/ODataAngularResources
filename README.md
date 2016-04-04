@@ -363,7 +363,7 @@ The **$odata.Func** class also supports the lambda operators **any** and **all**
 
 new $odata.Func(**LambdaOperator**, **PropertyName**, **LambdaVariable**, **Expression**)
 
-The parameters are assumed to be first, a lambda operator, a lambda variable, and a boolean expression.
+The parameters are assumed to be first, a lambda operator, a property name, a lambda variable, and a boolean expression.
 The boolean expression must use the lambda variable to refer to properties of the related entities identified by the navigation path.
 
 ```javascript
