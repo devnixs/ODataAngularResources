@@ -396,10 +396,7 @@
                     forEach(data, function(item) {
                       if (typeof item === "object") {
                           var newResource = new Resource(item);
-                          if (angular.isFunction(persistence)) {
-                              newResource.$refresh = refreshData.bind(newResource);
-                              newResource.$refresh.$$persistence = persistence(false);
-                          }
+                          addRefreshMethod(newResource, persistence, false);
                           value.push(newResource);
                       } else {
                         // Valid JSON values may be string literals, and these should not be converted
@@ -423,10 +420,7 @@
 
                 value.$resolved = true;
 
-                  if (angular.isFunction(persistence)) {
-                      value.$refresh = refreshData.bind(value);
-                      value.$refresh.$$persistence = persistence(true);
-                  }
+                  addRefreshMethod(value, persistence);
 
 
                 response.resource = value;
@@ -484,7 +478,14 @@
               return options.persistence ? odataProvider.re() : odataProvider;
           };
 
-          //Resource.prototype.$refresh = refreshData;
+          var addRefreshMethod = function (target, persistence, full) {
+                full = typeof full === 'boolean' ? full : true;
+                if (angular.isDefined(target) && angular.isDefined(persistence)) {
+                    var refreshFn = refreshData.bind(target);
+                    refreshFn.$$persistence = angular.isFunction(persistence) ? persistence(full) : persistence;
+                    Object.defineProperty(target, '$refresh', { enumerable: false, configurable: true, writable: true, value: refreshFn });
+                }
+            };
 
             var refreshData = function refreshData(success, error) {
                 var onQuery = function(queryString, success, error, isSingleElement, forceSingleElement, _persistence) {

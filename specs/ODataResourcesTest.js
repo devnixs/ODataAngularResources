@@ -1133,8 +1133,10 @@
                     ],
                     'count': 3
                 });
-                var result = User.odata().select('name').select('id').take(10).query(function(response) {
+                var result = User.odata().select('name').select('id').take(10).query(function (response) {
+                    expect(result.$refresh).toBeDefined();
                     expect(result[0].$refresh).toBeDefined();
+                    expect(result.$refresh.$$persistence).not.toBe(result[0].$refresh.$$persistence);
                     expect(result[0].$odata().execute()).toBe('$select=name,id');
                 });
                 $httpBackend.flush();
@@ -1190,6 +1192,7 @@
                     });
                     result[0].$refresh(function(response2) {
                         expect(response2.id).toBe(1);
+                        expect(response2.$refresh).toBeDefined();
                     });
                 });
 
@@ -1234,6 +1237,7 @@
                     });
                     result.$refresh(function(response2) {
                         expect(response2.count).toBe(3);
+                        expect(response2.$refresh).toBeDefined();
                     });
                 });
 
@@ -1278,6 +1282,7 @@
                     });
                     result.$refresh(function(response2) {
                         expect(response2.id).toBe(1);
+                        expect(response2.$refresh).toBeDefined();
                     });
                 });
 
@@ -1292,6 +1297,7 @@
                     $httpBackend.expectGET("/user/$count/?$top=3&$select=name,id").respond(200, 15);
                     result.$refresh(function(response2) {
                         expect(response2.result).toBe(15);
+                        expect(response2.$refresh0.toBeDefined());
                     });
                 });
 
