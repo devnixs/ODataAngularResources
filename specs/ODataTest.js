@@ -93,6 +93,10 @@
                     expect(new $odata.Provider().expandPredicate('table1').filter(predicate).finish().execute())
                       .toBe("$expand=table1($filter=(FirstName eq 'Bobby') and (LastName eq 'McGee'))");
                 });
+                it('should support multiplle params', function () {
+                    expect(new $odata.Provider().expandPredicate('table1').filter('FirstName', 'eq', 'Bob').finish().execute())
+                        .toBe("$expand=table1($filter=FirstName eq 'Bob')");
+                });
             });
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
@@ -518,8 +522,24 @@
                 });
             });
         });
-        describe('Provider', function() {
-            describe('filter', function() {
+        describe('Provider', function () {
+            describe('Single', function() {
+                it('should throw if called get with no callback', function () {
+                    var provider = new $odata.Provider();
+                    expect(function () {
+                        provider.single();
+                    }).toThrow();
+                });
+            });
+            describe('Get', function() {
+                it('should throw if called get with no callback', function () {
+                    var provider = new $odata.Provider();
+                    expect(function () {
+                        provider.get(5);
+                    }).toThrow();
+                });
+            });
+            describe('Filter', function() {
                 it('should add to the filters', function() {
                     var provider = new $odata.Provider();
                     provider.filter("a", "b");
@@ -542,24 +562,6 @@
                         provider.filter(undefined);
                     }).toThrow();
                 });
-                it('should throw if called query with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.query();
-                    }).toThrow();
-                });
-                it('should throw if called get with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.get(5);
-                    }).toThrow();
-                });
-                it('should throw if called get with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.single(5);
-                    }).toThrow();
-                });
             });
             describe('Execute', function() {
                 it('should generate a query with one parameter', function() {
@@ -568,7 +570,13 @@
                     expect(query).toBe("$filter=a eq 'b'");
                 });
             });
-            describe('Query', function() {
+            describe('Query', function () {
+                it('should throw if called query with no callback', function() {
+                    var provider = new $odata.Provider();
+                    expect(function() {
+                        provider.query();
+                    }).toThrow();
+                });
                 it('should call execute', function() {
                     var provider = new $odata.Provider(function() {});
                     spyOn(provider, 'execute');

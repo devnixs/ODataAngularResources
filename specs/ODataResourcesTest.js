@@ -13,10 +13,21 @@
     var $httpBackend;
     var $odata;
     var scope;
-    describe('ODataResources Service', function() {
+    var _config;
+    describe('ODataResources Service', function () {
         beforeEach(module('ODataResources'));
-        beforeEach(function() {
-            inject(function(_$odataresource_, _$httpBackend_, _$odata_, $rootScope) {
+        beforeEach(function () {
+            inject(function (_$odataresource_, _$httpBackend_, _$odata_, $rootScope) {
+                angular.module('ODataResources').config(function ($httpProvider) {
+                    $httpProvider.interceptors.push(function () {
+                        return {
+                            'request': function (config) {
+                                _config = config;
+                                return config;
+                            },
+                        };
+                    });
+                });
                 $odataresource = _$odataresource_;
                 $httpBackend = _$httpBackend_;
                 $odata = _$odata_;
@@ -1096,6 +1107,25 @@
                     $httpBackend.flush();
                     expect(1).toBe(1);
                 });
+            });
+        });
+        describe('HttpConfig options', function() {
+            var User;
+            beforeEach(function() {});
+            it('should have noLoadingBar property when option set.', function () {
+                $httpBackend.expectGET("/user").respond(200);
+                User = $odataresource("/user", {}, {}, { ignoreLoadingBar: true });
+                User.odata().query();
+                $httpBackend.flush();
+                expect(_config.ignoreLoadingBar).toBeDefined();
+                expect(_config.ignoreLoadingBar).toBe(true);
+            });
+            it('should not have noLoadingBar property when option not set.', function () {
+                $httpBackend.expectGET("/user").respond(200);
+                User = $odataresource("/user");
+                User.odata().query();
+                $httpBackend.flush();
+                expect(_config.ignoreLoadingBar).not.toBeDefined();
             });
         });
     });

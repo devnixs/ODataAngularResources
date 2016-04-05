@@ -297,7 +297,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 }
 
 ]);;angular.module('ODataResources').
-factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
+factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', function (ODataPredicate, ODataBinaryOperation) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {
@@ -631,14 +631,14 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             error = error || angular.noop;
             return this.callback(this.execute(), success, error);
         };
-        ODataProvider.prototype.single = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+        ODataProvider.prototype.single = function(success, error) {
+            if (!angular.isFunction(this.callback)) throw "Cannot execute single, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             return this.callback(this.execute(), success, error, true, true);
         };
         ODataProvider.prototype.get = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
@@ -651,7 +651,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
         };
 
         ODataProvider.prototype.count = function(success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
