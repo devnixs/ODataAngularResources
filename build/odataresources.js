@@ -1274,7 +1274,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement, forceSingleElement, _persistence);
                 };
                 var odataProvider = new $odata.Provider(onQuery, options.isodatav4, this.$refresh.$$persistence);
-                odataProvider = options.persistence ? odataProvider.re() : odataProvider;
+                odataProvider = odataProvider.re();
 
                 // Single and Count are special, so rerun them.
                 if (this.$refresh.$$persistence.$$type == 'count') {
