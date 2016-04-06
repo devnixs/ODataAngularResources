@@ -13,10 +13,21 @@
     var $httpBackend;
     var $odata;
     var scope;
-    describe('ODataResources Service', function() {
+    var _config;
+    describe('ODataResources Service', function () {
         beforeEach(module('ODataResources'));
-        beforeEach(function() {
-            inject(function(_$odataresource_, _$httpBackend_, _$odata_, $rootScope) {
+        beforeEach(function () {
+            inject(function (_$odataresource_, _$httpBackend_, _$odata_, $rootScope) {
+                angular.module('ODataResources').config(function ($httpProvider) {
+                    $httpProvider.interceptors.push(function () {
+                        return {
+                            'request': function (config) {
+                                _config = config;
+                                return config;
+                            },
+                        };
+                    });
+                });
                 $odataresource = _$odataresource_;
                 $httpBackend = _$httpBackend_;
                 $odata = _$odata_;
@@ -884,218 +895,432 @@
         describe('OData v4 explicitly specified', function() {
             var User;
             beforeEach(function() {});
-            describe('', function() {
 
-                it('with query and 1 nested element', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
+            it('with query and 1 nested element', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user?$expand=roles($expand=role)")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": [{
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }],
+                        'count': 10
                     });
-                    $httpBackend.expectGET("/user?$expand=roles($expand=role)")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": [{
-                                name: 'Test',
-                                id: 1,
-                            }, {
-                                name: 'Foo',
-                                id: 2,
-                            }, {
-                                name: 'Bar',
-                                id: 3,
-                            }],
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .expand("roles", "role")
-                        .query();
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
+                var result = User.odata()
+                    .expand("roles", "role")
+                    .query();
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('with query and 2 nested element', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user?$expand=roles($expand=role($expand=users))")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": [{
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }],
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .expand("roles", "role", "users")
+                    .query();
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('with get and 1 nested element', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user(1)?$expand=roles($expand=role)")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": {
+                            name: 'Test',
+                            id: 1,
+                        },
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .expand("roles", "role")
+                    .get(1);
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('with get and 2 nested element', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user(1)?$expand=roles($expand=role($expand=users))")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": {
+                            name: 'Test',
+                            id: 1,
+                        },
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .expand("roles", "role", "users")
+                    .get(1);
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('should query with odata v4 datetime', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user(1)?$filter=date eq 2015-07-28T10:23:00Z")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": {
+                            name: 'Test',
+                            id: 1,
+                        },
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .filter("date", new $odata.Value(new Date("07/28/2015 10:23")))
+                    .get(1);
+
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('should query with odata v4 inlinecount', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user?$count=true")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "@odata.count": 2,
+                        "value": [{
+                            name: 'Test',
+                            id: 1,
+                        }]
+                    });
+                var data = User.odata()
+                    .withInlineCount()
+                    .query();
+
+                $httpBackend.flush();
+                expect(data.count)
+                    .toBe(2);
+            });
+
+            it('should query with nested odata v4 datetime', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user(1)?$filter=(date eq 2015-07-28T10:23:00Z) and (date eq 2016-07-28T10:23:00Z)")
+                    .respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": {
+                            name: 'Test',
+                            id: 1,
+                        },
+                        'count': 10
+                    });
+                var result = User.odata()
+                    .filter("date", new $odata.Value(new Date("07/28/2015 10:23")))
+                    .filter("date", new $odata.Value(new Date("07/28/2016 10:23")))
+                    .get(1);
+
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
+            it('shouldn\'t fail if the response contains a value property', function() {
+                User = $odataresource('/user', {}, {}, {
+                    odatakey: 'id',
+                    isodatav4: true
+                });
+                $httpBackend.expectGET("/user(1)")
+                    .respond(200, {
+                        '@odata.context': 'http://host/service/$metadata#Collection(Edm.String)',
+                        'value': 'test',
+                        'someOtherData': 'foobar',
+                    });
+
+                var result = User.odata()
+                    .get(1);
+
+                $httpBackend.flush();
+                expect(result.value)
+                    .toBe('test');
+            });
+
+            it('Should work with null values', function() {
+
+                var User = $odataresource('/user/:userId', {
+                    userId: '@id'
+                }, {
+                    odata: {
+                        method: 'POST',
+                        url: '/myCustomUrl'
+                    }
                 });
 
-                it('with query and 2 nested element', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user?$expand=roles($expand=role($expand=users))")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": [{
-                                name: 'Test',
-                                id: 1,
-                            }, {
-                                name: 'Foo',
-                                id: 2,
-                            }, {
-                                name: 'Bar',
-                                id: 3,
-                            }],
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .expand("roles", "role", "users")
-                        .query();
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
-                });
+                $httpBackend.expectPOST("/myCustomUrl?$filter=Name eq null")
+                    .respond(200);
 
-                it('with get and 1 nested element', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user(1)?$expand=roles($expand=role)")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": {
-                                name: 'Test',
-                                id: 1,
-                            },
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .expand("roles", "role")
-                        .get(1);
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
-                });
-
-                it('with get and 2 nested element', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user(1)?$expand=roles($expand=role($expand=users))")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": {
-                                name: 'Test',
-                                id: 1,
-                            },
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .expand("roles", "role", "users")
-                        .get(1);
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
-                });
-
-                it('should query with odata v4 datetime', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user(1)?$filter=date eq 2015-07-28T10:23:00Z")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": {
-                                name: 'Test',
-                                id: 1,
-                            },
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .filter("date", new $odata.Value(new Date("07/28/2015 10:23")))
-                        .get(1);
-
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
-                });
-
-                it('should query with odata v4 inlinecount', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user?$count=true")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "@odata.count": 2,
-                            "value": [{
-                                name: 'Test',
-                                id: 1,
-                            }]
-                        });
-                    var data = User.odata()
-                        .withInlineCount()
-                        .query();
-
-                    $httpBackend.flush();
-                    expect(data.count)
-                        .toBe(2);
-                });
-
-                it('should query with nested odata v4 datetime', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user(1)?$filter=(date eq 2015-07-28T10:23:00Z) and (date eq 2016-07-28T10:23:00Z)")
-                        .respond(200, {
-                            "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
-                            "value": {
-                                name: 'Test',
-                                id: 1,
-                            },
-                            'count': 10
-                        });
-                    var result = User.odata()
-                        .filter("date", new $odata.Value(new Date("07/28/2015 10:23")))
-                        .filter("date", new $odata.Value(new Date("07/28/2016 10:23")))
-                        .get(1);
-
-                    $httpBackend.flush();
-                    expect(1)
-                        .toBe(1);
-                });
-
-                it('shouldn\'t fail if the response contains a value property', function() {
-                    User = $odataresource('/user', {}, {}, {
-                        odatakey: 'id',
-                        isodatav4: true
-                    });
-                    $httpBackend.expectGET("/user(1)")
-                        .respond(200, {
-                            '@odata.context': 'http://host/service/$metadata#Collection(Edm.String)',
-                            'value': 'test',
-                            'someOtherData': 'foobar',
-                        });
-
-                    var result = User.odata()
-                        .get(1);
-
-                    $httpBackend.flush();
-                    expect(result.value)
-                        .toBe('test');
-                });
-
-                it('Should work with null values', function() {
-
-                    var User = $odataresource('/user/:userId', {
-                        userId: '@id'
-                    }, {
-                        odata: {
-                            method: 'POST',
-                            url: '/myCustomUrl'
+                User.odata()
+                    .filter('Name', null)
+                    .query();
+                $httpBackend.flush();
+                expect(1).toBe(1);
+            });
+        });
+        describe('OData $refresh feature', function() {
+            var User;
+            beforeEach(function () { });
+            // should run re() on the odata method automatically if options.persistence
+            it('shouldn\'t apply $refresh to initial odataresource object', function() {
+                User = $odataresource('/user', {}, {}, { persistence: true });
+                expect(User.$refresh).not.toBeDefined();
+            });
+            it('should add limited persisted $refresh to individual odataresource objects of query response', function() {
+                User = $odataresource('/user', {}, {}, { persistence: true });
+                $httpBackend.expectGET('/user?$top=10&$select=name,id').respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [
+                        {
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
                         }
-                    });
-
-                    $httpBackend.expectPOST("/myCustomUrl?$filter=Name eq null")
-                        .respond(200);
-
-                    User.odata()
-                        .filter('Name', null)
-                        .query();
-                    $httpBackend.flush();
-                    expect(1).toBe(1);
+                    ],
+                    'count': 3
                 });
+                var result = User.odata().select('name').select('id').take(10).query(function (response) {
+                    expect(result.$refresh).toBeDefined();
+                    expect(result[0].$refresh).toBeDefined();
+                    expect(result.$refresh.$$persistence).not.toBe(result[0].$refresh.$$persistence);
+                    expect(result[0].$odata().execute()).toBe('$select=name,id');
+                });
+                $httpBackend.flush();
+            });
+            it('should add full persisted $refresh to non get query response', function () {
+                User = $odataresource('/user', {}, {}, {persistence: true });
+                $httpBackend.expectGET('/user?$top=10&$select=name,id').respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [
+                        {
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }
+                    ],
+                    'count': 3
+                });
+                var result = User.odata().select('name').select('id').take(10).query(function(response) {
+                    expect(result.$refresh).toBeDefined();
+                    expect(result.$refresh.$$persistence.takeAmount).toBe(10);
+                });
+                $httpBackend.flush();
+            });
+            it('should return individual item with individual item instance $refresh', function() {
+                User = $odataresource('/user', {}, {}, { isodatav4: true, odatakey: 'id', persistence: true });
+                $httpBackend.expectGET('/user?$top=10&$select=name,id').respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [
+                        {
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }
+                    ],
+                    'count': 3
+                });
+                
+                var result = User.odata().select('name').select('id').take(10).query(function(response) {
+                    expect(result[0].$refresh).toBeDefined();
+                    $httpBackend.expectGET('/user(1)?$select=name,id').respond(200, {
+                        name: 'Test',
+                        id: 1,
+                    });
+                    result[0].$refresh(function(response2) {
+                        expect(response2.id).toBe(1);
+                        expect(response2.$refresh).toBeDefined();
+                    });
+                });
+
+                $httpBackend.flush();
+            });
+            it('should return an array when array instance $refresh', function() {
+                User = $odataresource('/user', {}, {}, { isodatav4: true, odatakey: 'id', persistence: true });
+                $httpBackend.expectGET('/user?$top=3&$select=name,id').respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [
+                        {
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }
+                    ],
+                    'count': 3
+                });
+                
+                var result = User.odata().select('name').select('id').take(3).query(function(response) {
+                    expect(result.$refresh).toBeDefined();
+                    $httpBackend.expectGET('/user?$top=3&$select=name,id').respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": [
+                            {
+                                name: 'Test',
+                                id: 1,
+                            }, {
+                                name: 'Foo',
+                                id: 2,
+                            }, {
+                                name: 'Bar',
+                                id: 3,
+                            }
+                        ],
+                        'count': 3
+                    });
+                    result.$refresh(function(response2) {
+                        expect(response2.count).toBe(3);
+                        expect(response2.$refresh).toBeDefined();
+                    });
+                });
+
+                $httpBackend.flush();
+            });
+            it('should return a single response when single instance $refresh', function() {
+                User = $odataresource('/user', {}, {}, { isodatav4: true, odatakey: 'id', persistence: true });
+                $httpBackend.expectGET('/user?$top=3&$select=name,id').respond(200, {
+                    "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                    "value": [
+                        {
+                            name: 'Test',
+                            id: 1,
+                        }, {
+                            name: 'Foo',
+                            id: 2,
+                        }, {
+                            name: 'Bar',
+                            id: 3,
+                        }
+                    ],
+                    'count': 3
+                });
+
+                var result = User.odata().select('name').select('id').take(3).single(function(response) {
+                    expect(result.$refresh).toBeDefined();
+                    $httpBackend.expectGET('/user?$top=3&$select=name,id').respond(200, {
+                        "@odata.context": "http://host/service/$metadata#Collection(Edm.String)",
+                        "value": [
+                            {
+                                name: 'Test',
+                                id: 1,
+                            }, {
+                                name: 'Foo',
+                                id: 2,
+                            }, {
+                                name: 'Bar',
+                                id: 3,
+                            }
+                        ],
+                        'count': 3
+                    });
+                    result.$refresh(function(response2) {
+                        expect(response2.id).toBe(1);
+                        expect(response2.$refresh).toBeDefined();
+                    });
+                });
+
+                $httpBackend.flush();
+            });
+            it('should return an new count on a count instance $refresh', function() {
+                User = $odataresource('/user', {}, {}, { isodatav4: true, odatakey: 'id', persistence: true });
+                $httpBackend.expectGET("/user/$count/?$top=3&$select=name,id").respond(200, 15);
+                
+                var result = User.odata().select('name').select('id').take(3).count(function(response) {
+                    expect(result.$refresh).toBeDefined();
+                    $httpBackend.expectGET("/user/$count/?$top=3&$select=name,id").respond(200, 15);
+                    result.$refresh(function(response2) {
+                        expect(response2.result).toBe(15);
+                        expect(response2.$refresh0.toBeDefined());
+                    });
+                });
+
+                $httpBackend.flush();
+            });
+        });
+        describe('HttpConfig options', function () {
+            var User;
+            beforeEach(function() {});
+            it('should have noLoadingBar property when option set.', function () {
+                $httpBackend.expectGET("/user").respond(200);
+                User = $odataresource("/user", {}, {}, { ignoreLoadingBar: true });
+                User.odata().query();
+                $httpBackend.flush();
+                expect(_config.ignoreLoadingBar).toBeDefined();
+                expect(_config.ignoreLoadingBar).toBe(true);
+            });
+            it('should not have noLoadingBar property when option not set.', function () {
+                $httpBackend.expectGET("/user").respond(200);
+                User = $odataresource("/user");
+                User.odata().query();
+                $httpBackend.flush();
+                expect(_config.ignoreLoadingBar).not.toBeDefined();
             });
         });
     });

@@ -257,7 +257,7 @@
           }
 
           function Resource(value) {
-            shallowClearAndCopy(value || {}, this);
+              shallowClearAndCopy(value || {}, this);
           }
 
           Resource.prototype.toJSON = function() {
@@ -271,12 +271,13 @@
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
 
-            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement,forceSingleElement) {
+            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement, forceSingleElement, persistence) {
               var params = {}, data, success, error;
 
               /* jshint -W086 */
               /* (purposefully fall through case statements) */
               switch (arguments.length) {
+                case 9:
                 case 8:
                 case 7:
                 case 6:
@@ -340,9 +341,10 @@
                 data,
                 isOdata);
 
+              //if (angular.isString(odataQueryString) && odataQueryString !== "" && !isOdata || (isOdata && (!isSingleElement || forceSingleElement))) {
               if (isOdata && odataQueryString !== "" && (!isSingleElement || forceSingleElement)) {
                 httpConfig.url += "?" + odataQueryString;
-              } else if (isOdata && odataQueryString !== "" && isSingleElement) {
+              } else if (odataQueryString !== "" && isSingleElement) {
                 httpConfig.url += odataQueryString;
               }
 
@@ -365,7 +367,6 @@
                   for (var property in fullObject) {
                     if (property !== "value") {
                       value[property] = fullObject[property];
-
                     }
                   }
                 }
@@ -394,7 +395,9 @@
                     value.length = 0;
                     forEach(data, function(item) {
                       if (typeof item === "object") {
-                        value.push(new Resource(item));
+                          var newResource = new Resource(item);
+                          addRefreshMethod(newResource, persistence, false);
+                          value.push(newResource);
                       } else {
                         // Valid JSON values may be string literals, and these should not be converted
                         // into objects. These items will not have access to the Resource prototype
@@ -416,6 +419,9 @@
                 }
 
                 value.$resolved = true;
+
+                  addRefreshMethod(value, persistence);
+
 
                 response.resource = value;
 
@@ -442,7 +448,7 @@
                 // - return the instance / collection
                 value.$promise = promise;
                 value.$resolved = false;
-
+                
                 return value;
               }
 
@@ -463,14 +469,45 @@
           });
 
           var oldOdataResource = Resource.odata;
-          Resource.odata = function() {
-            var onQuery = function(queryString, success, error, isSingleElement,forceSingleElement) {
-              return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement,forceSingleElement);
+          Resource.odata = function (persistence) {
+              var onQuery = function(queryString, success, error, isSingleElement, forceSingleElement, _persistence) {
+                  return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement, forceSingleElement, _persistence);
+              };
+
+              var odataProvider = new $odata.Provider(onQuery, options.isodatav4, this.$refresh ? this.$refresh.$$persistence : null);
+              return options.persistence ? odataProvider.re() : odataProvider;
+          };
+
+          var addRefreshMethod = function (target, persistence, full) {
+                full = typeof full === 'boolean' ? full : true;
+                if (angular.isDefined(target) && angular.isDefined(persistence)) {
+                    var refreshFn = refreshData.bind(target);
+                    refreshFn.$$persistence = angular.isFunction(persistence) ? persistence(full) : persistence;
+                    Object.defineProperty(target, '$refresh', { enumerable: false, configurable: true, writable: true, value: refreshFn });
+                }
             };
 
+            var refreshData = function refreshData(success, error) {
+                var onQuery = function(queryString, success, error, isSingleElement, forceSingleElement, _persistence) {
+                    return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement, forceSingleElement, _persistence);
+                };
+                var odataProvider = new $odata.Provider(onQuery, options.isodatav4, this.$refresh.$$persistence);
+                odataProvider = odataProvider.re();
 
-            return new $odata.Provider(onQuery,options.isodatav4);
-          };
+                // Single and Count are special, so rerun them.
+                if (this.$refresh.$$persistence.$$type == 'count') {
+                    return odataProvider.count();
+                }
+                if (this.$refresh.$$persistence.$$type == 'single') {
+                    return odataProvider.single();
+                }
+
+                var queryString = odataProvider.execute();
+
+                var multiple = this instanceof Array;
+                // Refresh a normal Resource or Array of Resources
+                return Resource[multiple ? 'query' : 'get'].call(undefined, {}, multiple ? {} : this, success, error, multiple, (!multiple? '?' : '') + queryString, !multiple, false, this.$refresh.$$persistence);
+                };
 
           Resource.bind = function(additionalParamDefaults) {
             return resourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);

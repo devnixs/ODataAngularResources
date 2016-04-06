@@ -1,5 +1,5 @@
 angular.module('ODataResources').
-factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
+factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', function (ODataPredicate, ODataBinaryOperation) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {

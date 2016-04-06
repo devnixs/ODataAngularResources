@@ -666,7 +666,7 @@ function lookupDottedPath(obj, path) {
 
     it("should throw if passed to much arguments", function() {
     expect(function(){
-    CreditCard.query("a", "b","a", "b","a", "b","a", "b","c");
+    CreditCard.query("a", "b","a", "b","a", "b","a", "b","c","a");
     }).toThrow();
   });
 
