@@ -307,7 +307,7 @@ To do so, use the **$odata.Func** class.
 var users = User.odata()
 .filter(new $odata.Func("endswith","FullName","Doe"), true)
 .query();
-//Queries /user?$filter=endswith(FullName eq 'Doe') eq true
+//Queries /user?$filter=endswith(FullName, 'Doe') eq true
 ```
 
 ####Definition
