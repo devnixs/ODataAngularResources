@@ -93,6 +93,10 @@
                     expect(new $odata.Provider().expandPredicate('table1').filter(predicate).finish().execute())
                       .toBe("$expand=table1($filter=(FirstName eq 'Bobby') and (LastName eq 'McGee'))");
                 });
+                it('should support multiplle params', function () {
+                    expect(new $odata.Provider().expandPredicate('table1').filter('FirstName', 'eq', 'Bob').finish().execute())
+                        .toBe("$expand=table1($filter=FirstName eq 'Bob')");
+                });
             });
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
@@ -518,8 +522,24 @@
                 });
             });
         });
-        describe('Provider', function() {
-            describe('filter', function() {
+        describe('Provider', function () {
+            describe('Single', function() {
+                it('should throw if called get with no callback', function () {
+                    var provider = new $odata.Provider();
+                    expect(function () {
+                        provider.single();
+                    }).toThrow();
+                });
+            });
+            describe('Get', function() {
+                it('should throw if called get with no callback', function () {
+                    var provider = new $odata.Provider();
+                    expect(function () {
+                        provider.get(5);
+                    }).toThrow();
+                });
+            });
+            describe('Filter', function() {
                 it('should add to the filters', function() {
                     var provider = new $odata.Provider();
                     provider.filter("a", "b");
@@ -542,24 +562,6 @@
                         provider.filter(undefined);
                     }).toThrow();
                 });
-                it('should throw if called query with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.query();
-                    }).toThrow();
-                });
-                it('should throw if called get with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.get(5);
-                    }).toThrow();
-                });
-                it('should throw if called get with no callback', function() {
-                    var provider = new $odata.Provider();
-                    expect(function() {
-                        provider.single(5);
-                    }).toThrow();
-                });
             });
             describe('Execute', function() {
                 it('should generate a query with one parameter', function() {
@@ -568,7 +570,13 @@
                     expect(query).toBe("$filter=a eq 'b'");
                 });
             });
-            describe('Query', function() {
+            describe('Query', function () {
+                it('should throw if called query with no callback', function() {
+                    var provider = new $odata.Provider();
+                    expect(function() {
+                        provider.query();
+                    }).toThrow();
+                });
                 it('should call execute', function() {
                     var provider = new $odata.Provider(function() {});
                     spyOn(provider, 'execute');
@@ -659,6 +667,81 @@
 					expect(provider.execute()).toBe("$format=json");
 					provider.take(10).skip(5);
                     expect(provider.execute()).toBe("$top=10&$skip=5&$format=json");
+                });
+            });
+            describe('Persistence', function () {
+                var persist = { selectables: ['prop1', 'prop2'], expandables: ['table1', 'table2($select=prop3)'], formatBy: 'json', takeAmount: 5 };
+                describe('Re(usables)', function() {
+                    it('should store reusables argument', function () {
+                        var provider = new $odata.Provider(null, true, persist);
+                        expect(provider.$$reusables).toBe(persist);
+                    });
+                    it('should apply reusables when re method is run', function () {
+                        var provider = new $odata.Provider(null, true, persist);
+                        expect(provider.re().execute()).toBe('$top=5&$expand=table1,table2($select=prop3)&$select=prop1,prop2&$format=json');
+                    });
+                    it('shouldn\'t fail without a persistence parameter', function () {
+                        var provider = new $odata.Provider(null, true);
+                        expect(provider.re().execute()).toBe('');
+                    });
+                    it('should be chainable', function () {
+                        var provider = new $odata.Provider(null, true, persist);
+                        expect(provider.re()).toBe(provider);
+                    });
+                    it('shouldn\'t duplicate existing entries', function() {
+                        var provider = new $odata.Provider(null, true, persist);
+                        expect(provider.select('prop1').re().execute()).toBe('$top=5&$expand=table1,table2($select=prop3)&$select=prop1,prop2&$format=json');
+                    });
+                });
+                describe('Get Persistence Object', function () {
+                    function getPersistenceObject(full, type, persistObj) {
+                        var callback = jasmine.createSpy('callback');
+                        var odata = new $odata.Provider(callback, true, persistObj).re();
+                        odata[type].call(odata);
+                        var recent = callback.calls.mostRecent();
+                        expect(recent).toBeDefined();
+                        expect(recent.args.length).toBe(6);
+                        var method = recent.args[5];
+                        return method(full);
+                    }
+                    it('should return a persistence object with $$type defined', function () {
+                        ['query', 'single', 'count', 'get'].forEach(function(action) {
+                            var obj = getPersistenceObject(false, action, persist);
+                            expect(obj).toBeDefined();
+                            expect(obj.$$type).toBeDefined();
+                            expect(obj.$$type).toBe(action);
+                        });
+                    });
+                    it('should return a full object if pasased true', function () {
+                        ['query', 'single', 'count', 'get'].forEach(function(action) {
+                            var obj = getPersistenceObject(true, action, persist);
+                            expect(obj.takeAmount).toBeDefined();
+                            expect(obj.takeAmount).toBe(5);
+                        });
+                    });
+                    it('should return a full object if count or single and didn\'t request full', function() {
+                        ['single', 'count'].forEach(function(action) {
+                            var obj = getPersistenceObject(false, action, persist);
+                            expect(obj.takeAmount).toBeDefined();
+                            expect(obj.takeAmount).toBe(5);
+                        });
+                    });
+                    it('should return a limited object if get or query (refresh called on individual entity of array from query)', function () {
+                        ['query', 'get'].forEach(function (action) {
+                            var obj = getPersistenceObject(false, action, persist);
+                            expect(obj.takeAmount).not.toBeDefined();
+                        });
+                    });
+                    it('shouldn\'t return private ($$ prefixed) variables', function() {
+                        var obj = getPersistenceObject(true, 'get', persist);
+                        expect(obj.$$callback).not.toBeDefined();
+                    });
+                    it('shouldn\'t include empty or undefined properties', function() {
+                        var obj = getPersistenceObject(false, 'get', {});
+                        expect(obj.selectables).not.toBeDefined();
+                        expect(obj.expanbables).not.toBeDefined();
+                        expect(obj.formatBy).not.toBeDefined();
+                    });
                 });
             });
         });

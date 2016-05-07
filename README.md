@@ -307,7 +307,7 @@ To do so, use the **$odata.Func** class.
 var users = User.odata()
 .filter(new $odata.Func("endswith","FullName","Doe"), true)
 .query();
-//Queries /user?$filter=endswith(FullName eq 'Doe') eq true
+//Queries /user?$filter=endswith(FullName, 'Doe') eq true
 ```
 
 ####Definition
@@ -439,6 +439,14 @@ myUser.$update();
 myUser.$delete();
 //Will issue a DELETE /user(1)
 ```
+ * You can provide a comma seperated list of id's for complex key tables.
+```javascript
+User = $odataresoure('/userroles', {},{},{odatakey: 'id,roleid'});
+var myUser = new User();
+
+myUser.$update();
+//will issue a POST /user(id=1,roleid=2)
+```
 
 #### Expand and Odata v4
 
@@ -460,6 +468,34 @@ User = $odataresource('/user', {}, {}, {
 var result = User.odata().expand("roles", "role").query();
 //  /user?$expand=roles($expand=role)
 ```
+You can use the expand predicate for complex expand scenarios (such as parsing your metadata and applying a default schema to a query):
+```javascript
+var result = User.odata().expandPredicate("roles").select("name").finish().query();
+// /user?$expand=roles($select=name)
+```
+ExpandPredicate returns the Expand context and finish returns the base OdataProvider context, so make sure to finish the expandPredicate.
+
+You can nest expands as well:
+```javascript
+// grab odata context
+var query = User.odata();
+// add expand roles table and select roles.name
+query.expandPredicate("roles").select("name").finish();
+// add and save the context for the provider table and select provider.name, also expand provider -> settings (automatically calls finish())
+var providertype = query.expandPredicate("provider").select("name").expand("settings");
+// add provider type table and finish out both the provider type and provider expandPredicate contexts
+providertype.expandPredicate("providertype").finish().finish();
+// run the query
+query.query();
+
+// or inline
+
+var query = User.odata().expandPredicate("roles").select("name").finish().expandPredicate("provider").select("name").expand("settings")
+  .expandPredicate("providertype").finish().finish().query();
+
+// /user?$expand=roles($select=name),provider($select=name;expand=settings,providertype)
+```
+
 ### InlineCount with OData v4
 
 - With OData v4 inlinecount issues a $count=true parameter
@@ -497,6 +533,44 @@ User.odata()
 
 // queries /user?$filter=Name eq 'Raphael'&foo=bar                    
 ```
+
+### Refreshing Responses & Odata Query Persistence
+Support has been added to keep track of queries used to retrieve entities.  You can call the $refresh method on a returned array of resources,
+or an individual resource object itself to get an updated entity from the API.  The odata query applied to the refresh GET will depend on how
+the object you're calling the $refresh method on was retrieved.  There are two types of persisted queries, full and limited.  Full will store
+the entire list of odata arguments you supplied to reproduce the same result set.  Limited will limit the query to selects, expands, and
+format.  Limited assumes you're getting a single entity from a larger query, and want to keep the response equal to the initial object, ie
+same selects, expands, but dont need the filter/take/skip/etc odata arguments.
+
+**Persistence**
+
+To apply persisted query arguments to the provider manually call the 're' method.
+```javascript
+var newUser = userResource.$odata().re().query();
+```
+
+Or you can enable this behavior by default.
+```javascript
+var User = $odataresource("/user", {}, {}, { isodatav4: true, odatakey: "id", persistence: true } );
+var user = User.odata().select("name").query();
+var newUser = user.$odata().query();
+```
+
+**$refresh**
+
+Persistence is applied automatically with or without the persistence options flag when using $refresh.
+
+Use the following table to determine the query that will be appllied to the refresh:
+
+Initial OdataProvider Call              | Target                            | Persistence 
+:---------------------------------------|:----------------------------------|------------:
+var array = resource.odata().query();   | var array = array.$refresh();     | full   
+var array = resource.odata().query();   | var entity = array[0].$refresh(); | limited
+var entity = resource.odata().get(1);   | var entity = entity.$refresh();   | limited
+var entity = resource.odata().single(); | var entity = entity.$refresh();   | full   
+var count = resource.odata().count();   | var count = count.$refresh();     | full   
+
+
 
 ### Build from the source
 

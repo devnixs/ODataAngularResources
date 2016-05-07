@@ -297,7 +297,7 @@ factory('$odataBinaryOperation', ['$odataOperators','$odataProperty','$odataValu
 }
 
 ]);;angular.module('ODataResources').
-factory('$odataExpandPredicate', ['$odataPredicate', function (ODataPredicate) {
+factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', function (ODataPredicate, ODataBinaryOperation) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {
@@ -530,8 +530,8 @@ factory('$odataPredicate', ['$odataBinaryOperation',function(ODataBinaryOperatio
 ;angular.module('ODataResources').
 factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPredicate', '$odataOrderByStatement', '$odataExpandPredicate',
     function($odataOperators, ODataBinaryOperation, ODataPredicate, ODataOrderByStatement, ODataExpandPredicate) {
-        var ODataProvider = function(callback, isv4) {
-            this.callback = callback;
+        var ODataProvider = function(callback, isv4, reusables) {
+            this.$$callback = callback;
             this.filters = [];
             this.sortOrders = [];
             this.takeAmount = undefined;
@@ -542,6 +542,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             this.selectables = [];
             this.transformUrls=[];
             this.formatBy = undefined;
+            if (reusables)
+                this.$$reusables = reusables;
         };
         ODataProvider.prototype.filter = function(operand1, operand2, operand3) {
             if (operand1 === undefined) throw "The first parameted is undefined. Did you forget to invoke the method as a constructor by adding the 'new' keyword?";
@@ -625,23 +627,22 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                queryString = transform(queryString);
             }
 
-
             return queryString;
         };
         ODataProvider.prototype.query = function(success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute query, no callback was specified";
+            if (!angular.isFunction(this.$$callback)) throw "Cannot execute query, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
-            return this.callback(this.execute(), success, error);
+            return this.$$callback(this.execute(), success, error, false, false, getPersistence.bind(this, 'query'));
         };
-        ODataProvider.prototype.single = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+        ODataProvider.prototype.single = function(success, error) {
+            if (!angular.isFunction(this.$$callback)) throw "Cannot execute single, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
-            return this.callback(this.execute(), success, error, true, true);
+            return this.$$callback(this.execute(), success, error, true, true, getPersistence.bind(this, 'single'));
         };
         ODataProvider.prototype.get = function(data, success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute count, no callback was specified";
+            if (!angular.isFunction(this.$$callback)) throw "Cannot execute get, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
@@ -650,11 +651,11 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             if (queryString.length > 0) {
                 queryString = "?" + queryString;
             }
-            return this.callback("(" + data + ")" + queryString, success, error, true);
+            return this.$$callback("(" + data + ")" + queryString, success, error, true, false, getPersistence.bind(this, 'get'));
         };
 
         ODataProvider.prototype.count = function(success, error) {
-            if (!angular.isFunction(this.callback)) throw "Cannot execute get, no callback was specified";
+            if (!angular.isFunction(this.$$callback)) throw "Cannot execute count, no callback was specified";
             success = success || angular.noop;
             error = error || angular.noop;
             // The query string from this.execute() should be included even
@@ -663,8 +664,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             if (queryString.length > 0) {
                 queryString = "/?" + queryString;
             }
-
-            return this.callback("/$count"+queryString, success, error, true);
+            return this.$$callback("/$count" + queryString, success, error, true, false, getPersistence.bind(this, 'count'));
         };
 
         ODataProvider.prototype.withInlineCount = function() {
@@ -716,7 +716,6 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
             return new ODataExpandPredicate(tableName, this);
         };
 
-
         ODataProvider.prototype.select = function(params) {
             if (!angular.isString(params) && !angular.isArray(params)) {
                 throw "Invalid parameter passed to select method (" + params + ")";
@@ -736,6 +735,49 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     this.selectables.push(params[i]);
             }   
 
+            return this;
+        };
+
+        function getPersistence(type, full) {
+            var reusables = {};
+            // Set full persistence if type is count or single(?) because we'll want to pull in filters, etc to reproduce what we're refreshing.
+            // Otherwise, let the factory decide if the persistence state should include the full (for a refresh on the array), or limited for
+            // a single entity refresh.
+            // Single is tricky... Should the refresh requery and take the first element based on full filtering, or just refresh the entity we
+            // already have based on limited persistence?  What's its purposed use case?  Could set an option toggle for either or.
+            if (!full && (type === 'count' || type === 'single'))
+                full = true;
+            Object.defineProperty(reusables, '$$type', { enumerble: false, writable: true, configurable: true, value: type });
+            if (full) {
+                for (var key in this) {
+                    if (this.hasOwnProperty(key) && !(key.charAt(0) === '$' && key.charAt(1) === '$')) {
+                        reusables[key] = this[key];
+                    }
+                }
+                return reusables;
+            } else {
+                if (this.selectables.length)
+                    reusables.selectables = this.selectables;
+                if (this.expandables.length)
+                    reusables.expandables = this.expandables;
+                if (this.formatBy)
+                    reusables.formatBy = this.formatBy;
+            }
+            return reusables;
+        }
+
+        ODataProvider.prototype.re = function (force) {
+            if (this.$$reusables) {
+                for (var option in this.$$reusables) {
+                    if (angular.isArray(this.$$reusables[option])) {
+                        for (var i = 0; i < this.$$reusables[option].length; i++) {
+                            if (this[option].indexOf(this.$$reusables[option][i]) === -1)
+                                this[option].push(this.$$reusables[option][i]);
+                        }
+                    } else
+                        this[option] = this.$$reusables[option];
+                }
+            }
             return this;
         };
 
@@ -1000,7 +1042,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
           }
 
           function Resource(value) {
-            shallowClearAndCopy(value || {}, this);
+              shallowClearAndCopy(value || {}, this);
           }
 
           Resource.prototype.toJSON = function() {
@@ -1014,12 +1056,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
 
-            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement,forceSingleElement) {
+            Resource[name] = function(a1, a2, a3, a4, isOdata, odataQueryString, isSingleElement, forceSingleElement, persistence) {
               var params = {}, data, success, error;
 
               /* jshint -W086 */
               /* (purposefully fall through case statements) */
               switch (arguments.length) {
+                case 9:
                 case 8:
                 case 7:
                 case 6:
@@ -1083,9 +1126,10 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 data,
                 isOdata);
 
+              //if (angular.isString(odataQueryString) && odataQueryString !== "" && !isOdata || (isOdata && (!isSingleElement || forceSingleElement))) {
               if (isOdata && odataQueryString !== "" && (!isSingleElement || forceSingleElement)) {
                 httpConfig.url += "?" + odataQueryString;
-              } else if (isOdata && odataQueryString !== "" && isSingleElement) {
+              } else if (odataQueryString !== "" && isSingleElement) {
                 httpConfig.url += odataQueryString;
               }
 
@@ -1108,7 +1152,6 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                   for (var property in fullObject) {
                     if (property !== "value") {
                       value[property] = fullObject[property];
-
                     }
                   }
                 }
@@ -1137,7 +1180,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     value.length = 0;
                     forEach(data, function(item) {
                       if (typeof item === "object") {
-                        value.push(new Resource(item));
+                          var newResource = new Resource(item);
+                          addRefreshMethod(newResource, persistence, false);
+                          value.push(newResource);
                       } else {
                         // Valid JSON values may be string literals, and these should not be converted
                         // into objects. These items will not have access to the Resource prototype
@@ -1159,6 +1204,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 }
 
                 value.$resolved = true;
+
+                  addRefreshMethod(value, persistence);
+
 
                 response.resource = value;
 
@@ -1185,7 +1233,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 // - return the instance / collection
                 value.$promise = promise;
                 value.$resolved = false;
-
+                
                 return value;
               }
 
@@ -1206,14 +1254,45 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
           });
 
           var oldOdataResource = Resource.odata;
-          Resource.odata = function() {
-            var onQuery = function(queryString, success, error, isSingleElement,forceSingleElement) {
-              return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement,forceSingleElement);
+          Resource.odata = function (persistence) {
+              var onQuery = function(queryString, success, error, isSingleElement, forceSingleElement, _persistence) {
+                  return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement, forceSingleElement, _persistence);
+              };
+
+              var odataProvider = new $odata.Provider(onQuery, options.isodatav4, this.$refresh ? this.$refresh.$$persistence : null);
+              return options.persistence ? odataProvider.re() : odataProvider;
+          };
+
+          var addRefreshMethod = function (target, persistence, full) {
+                full = typeof full === 'boolean' ? full : true;
+                if (angular.isDefined(target) && angular.isDefined(persistence)) {
+                    var refreshFn = refreshData.bind(target);
+                    refreshFn.$$persistence = angular.isFunction(persistence) ? persistence(full) : persistence;
+                    Object.defineProperty(target, '$refresh', { enumerable: false, configurable: true, writable: true, value: refreshFn });
+                }
             };
 
+            var refreshData = function refreshData(success, error) {
+                var onQuery = function(queryString, success, error, isSingleElement, forceSingleElement, _persistence) {
+                    return oldOdataResource({}, {}, success, error, true, queryString, isSingleElement, forceSingleElement, _persistence);
+                };
+                var odataProvider = new $odata.Provider(onQuery, options.isodatav4, this.$refresh.$$persistence);
+                odataProvider = odataProvider.re();
 
-            return new $odata.Provider(onQuery,options.isodatav4);
-          };
+                // Single and Count are special, so rerun them.
+                if (this.$refresh.$$persistence.$$type == 'count') {
+                    return odataProvider.count();
+                }
+                if (this.$refresh.$$persistence.$$type == 'single') {
+                    return odataProvider.single();
+                }
+
+                var queryString = odataProvider.execute();
+
+                var multiple = this instanceof Array;
+                // Refresh a normal Resource or Array of Resources
+                return Resource[multiple ? 'query' : 'get'].call(undefined, {}, multiple ? {} : this, success, error, multiple, (!multiple? '?' : '') + queryString, !multiple, false, this.$refresh.$$persistence);
+                };
 
           Resource.bind = function(additionalParamDefaults) {
             return resourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);
