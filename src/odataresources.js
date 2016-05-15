@@ -361,7 +361,7 @@
                     data.count = data['@odata.count'];
                 }
 
-                if (data && (angular.isString(data['@odata.context']) || angular.isString(data['odata.context']) ) && data.value && angular.isArray(data.value)) {
+                if (data && (angular.isString(data['@odata.context']) || angular.isString(data['odata.metadata']) ) && data.value && angular.isArray(data.value)) {
                   var fullObject = data;
                   data = data.value;
                   for (var property in fullObject) {
