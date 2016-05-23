@@ -154,7 +154,12 @@ var myUsers =   User.odata()
 * You can also include multiple related models into your query
 
 ```javascript
-c
+var myUsers =   User.odata()
+                    .expand("City")
+                    .expand("Orders")
+                    .query();
+                    
+//Queries /user?$expand=City,Orders
 ```
 ###Pick a subset of the properties (Selecting)
 * You can use the select method to retrieve only some properties of the entities.
