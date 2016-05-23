@@ -1,5 +1,5 @@
 angular.module('ODataResources').
-factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', function (ODataPredicate, ODataBinaryOperation) {
+factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', '$odataOrderByStatement', function (ODataPredicate, ODataBinaryOperation, ODataOrderByStatement) {
 
     var ODataExpandPredicate = function (tableName, context) {
         if (tableName === undefined) {
@@ -15,6 +15,7 @@ factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', fu
         this.options = {
             select: [],
             filter: [],
+            orderby: [],
             expand: this.expandables,
         };
         this.context = context;
@@ -55,6 +56,11 @@ factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', fu
         return this;
     };
 
+    ODataExpandPredicate.prototype.orderBy = function (arg1, arg2) {
+        this.options.orderby.push((new ODataOrderByStatement(arg1, arg2)).execute());
+        return this;
+    };
+
     ODataExpandPredicate.prototype.expand = function (tableName) {
         if (tableName === undefined) {
             throw "ExpandPredicate.expand should be passed a table name but got undefined.";
@@ -75,7 +81,7 @@ factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', fu
         for (var option in this.options) {
             if (this.options[option].length) {
                 if (option === 'filter') {
-                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.isv4,true));
+                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.isv4, true));
                 } else {
                     sub.push("$" + option + "=" + this.options[option].join(','));
                 }
