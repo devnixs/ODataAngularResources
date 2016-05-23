@@ -154,13 +154,7 @@ var myUsers =   User.odata()
 * You can also include multiple related models into your query
 
 ```javascript
-var User = $odataresource('/user/:userId', {userId:'@id'});
-var myUsers =   User.odata()
-                    .expand("City")
-                    .expand("Orders")
-                    .query();
-                    
-//Queries /user?$expand=City,Orders
+c
 ```
 ###Pick a subset of the properties (Selecting)
 * You can use the select method to retrieve only some properties of the entities.
@@ -189,6 +183,18 @@ User = $odataresource('/user/:userId',
                 	 }
 	);
 ```
+
+###Specifying the response format
+```javascript
+var myUsers =   User.odata()
+					.format("json")
+                    .expand("City")
+                    .expand("Orders")
+                    .query();
+                    
+//Queries /user?$format=json&$expand=City,Orders
+```
+	
 
 ##Advanced queries
 

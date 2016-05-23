@@ -98,6 +98,12 @@
                         .toBe("$expand=table1($filter=FirstName eq 'Bob')");
                 });
             });
+            describe('OrderBy', function() {
+                it('should support orderBy nested expanded tables', function() {
+                    expect(new $odata.Provider().expandPredicate('table1').orderBy('table1Prop2').select('table1Prop1').finish().execute())
+                        .toBe('$expand=table1($select=table1Prop1;$orderby=table1Prop2 asc)');
+                });
+            });
             describe('Expand', function() {
                 it('should throw if passed undefined', function () {
                     expect(function () {
