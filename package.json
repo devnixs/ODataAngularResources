@@ -2,7 +2,7 @@
   "name": "ODataResources",
   "version": "1.0.0",
   "description": "Allows making fluent OData queries from angular resources",
-  "main": "",
+  "main": "build/odataresources.js",
   "scripts": {
     "test": "grunt testandcover",
     "start": "grunt build"
