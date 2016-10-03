@@ -58,17 +58,22 @@ function lookupDottedPath(obj, path) {
   return dst;
 }
 
-  var $resource, CreditCard, callback, $httpBackend, resourceProvider;
+  var $resource, CreditCard, callback, $httpBackend, resourceProvider, $q;
 
   beforeEach(module('ODataResources'));
 
   beforeEach(module(function($odataresourceProvider) {
-    resourceProvider = $odataresourceProvider;
+      resourceProvider = $odataresourceProvider;
   }));
+
+    beforeEach(module(function($exceptionHandlerProvider) {
+        $exceptionHandlerProvider.mode('log');
+    }));
 
   beforeEach(inject(function($injector) {
     $httpBackend = $injector.get('$httpBackend');
     $resource = $injector.get('$odataresource');
+    $q = $injector.get('$q');
     CreditCard = $resource('/CreditCard/:id:verb', {id:'@id.key'}, {
       charge:{
         method:'post',
@@ -875,225 +880,526 @@ function lookupDottedPath(obj, path) {
 
   describe('promise api', function() {
 
-    var $rootScope;
+    var $rootScope, $http;
 
-
-    beforeEach(inject(function(_$rootScope_) {
+    beforeEach(inject(function(_$rootScope_, _$http_) {
       $rootScope = _$rootScope_;
+      $http = _$http_;
     }));
 
-
-    describe('single resource', function() {
-
-      it('should add $promise to the result object', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = CreditCard.get({id: 123});
-
-        cc.$promise.then(callback);
-        expect(callback).not.toHaveBeenCalled();
-
-        $httpBackend.flush();
-
-        expect(callback).toHaveBeenCalledOnce();
-        expect(callback.calls.mostRecent().args[0]).toBe(cc);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should keep $promise around after resolution', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = CreditCard.get({id: 123});
-
-        cc.$promise.then(callback);
-        $httpBackend.flush();
-
-        callback = jasmine.createSpy();
-
-        cc.$promise.then(callback);
-        $rootScope.$apply(); //flush async queue
-
-        expect(callback).toHaveBeenCalledOnce();
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should keep the original promise after instance action', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        $httpBackend.expect('POST', '/CreditCard/123').respond({id: 123, number: '9876'});
-
-        var cc = CreditCard.get({id: 123});
-        var originalPromise = cc.$promise;
-
-        cc.number = '666';
-        cc.$save({id: 123});
-
-        expect(cc.$promise).toBe(originalPromise);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should allow promise chaining', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = CreditCard.get({id: 123});
-
-        cc.$promise.then(function(value) { return 'new value'; }).then(callback);
-        $httpBackend.flush();
-
-        expect(callback).toHaveBeenCalledOnceWith('new value');
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should allow $promise error callback registration', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond(404, 'resource not found');
-        var cc = CreditCard.get({id: 123});
-
-        cc.$promise.then(null, callback);
-        $httpBackend.flush();
-
-        var response = callback.calls.mostRecent().args[0];
-
-        expect(response.data).toEqual('resource not found');
-        expect(response.status).toEqual(404);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should add $resolved boolean field to the result object', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = CreditCard.get({id: 123});
-
-        expect(cc.$resolved).toBe(false);
-
-        cc.$promise.then(callback);
-        expect(cc.$resolved).toBe(false);
-
-        $httpBackend.flush();
-
-        expect(cc.$resolved).toBe(true);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should set $resolved field to true when an error occurs', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond(404, 'resource not found');
-        var cc = CreditCard.get({id: 123});
-
-        cc.$promise.then(null, callback);
-        $httpBackend.flush();
-        expect(callback).toHaveBeenCalledOnce();
-        expect(cc.$resolved).toBe(true);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should keep $resolved true in all subsequent interactions', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = CreditCard.get({id: 123});
-        $httpBackend.flush();
-        expect(cc.$resolved).toBe(true);
-
-        $httpBackend.expect('POST', '/CreditCard/123').respond();
-        cc.$save({id: 123});
-        expect(cc.$resolved).toBe(true);
-        $httpBackend.flush();
-        expect(cc.$resolved).toBe(true);
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should return promise from action method calls', function() {
-        $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
-        var cc = new CreditCard({name: 'Mojo'});
-
-        expect(cc).toEqualData({name: 'Mojo'});
-
-        cc.$get({id:123}).then(callback);
-
-        $httpBackend.flush();
-        expect(callback).toHaveBeenCalledOnce();
-        expect(cc).toEqualData({id: 123, number: '9876'});
-        callback = jasmine.createSpy();
-
-        $httpBackend.expect('POST', '/CreditCard').respond({id: 1, number: '9'});
-
-        cc.$save().then(callback);
-
-        $httpBackend.flush();
-        expect(callback).toHaveBeenCalledOnce();
-        expect(cc).toEqualData({id: 1, number: '9'});
-
-     expect(1).toBe(1);
-      });
-
-
-      it('should allow parsing a value from headers', function() {
-        // https://github.com/angular/angular.js/pull/2607#issuecomment-17759933
-        $httpBackend.expect('POST', '/CreditCard').respond(201, '', {'Location': '/new-id'});
-
-        var parseUrlFromHeaders = function(response) {
-          var resource = response.resource;
-          resource.url = response.headers('Location');
-          return resource;
+    describe('promise resolution/rejection/correction', function () {
+        var myCC = { number: '1234567890123456', expiration: '09-17' };
+        var myCCModification = { test: 'exists' };
+        var key = {                         // === Usage Target For Key ===
+            httpError: '/CreditCrd',        // errorInterceptor and errorCallback
+            throwError: '/CreditCard',      // errorInterceptor and errorCallback
+            throwArrayError: '/CreditCards',// errorInterceptor and errorCallback
+            httpSuccess: '/MyCreditCard',   // errorInterceptor and errorCallback
+            returnPromise: 0,               // errorInterceptor and errorCallback
+            returnHttpPromise: 1,           // errorInterceptor and errorCallback
+            returnObj: 2,                   // errorInterceptor and errorCallback
+            returnArray: 3,                 // errorInterceptor and errorCallback
+            returnVal: 4,                   // successCallback
+            returnModify: 5,                // successCallback
+            returnUndefined: 6,             // successCallback
+            referenceModify: 7,             // successCallback
         };
 
-        var CreditCard = $resource('/CreditCard', {}, {
-          save: {
-            method: 'post',
-            interceptor: {response: parseUrlFromHeaders}
-          }
+        function createMySpy(name, opt, opt2) {
+            var spy = jasmine.createSpy(name);
+            if (angular.isDefined(opt)) {
+                if (angular.isString(opt)) {
+                    if (opt2 === key.returnHttpPromise) {
+                        return spy.and.callFake(function(val) {
+                            return $http({ method: 'GET', url: opt });
+                        });
+                    }
+                    return spy.and.callFake(function () {
+                        var corrected = createResource(opt).odata().single();
+                        return angular.isDefined(opt2) && opt2 === key.returnPromise ? corrected.$promise : corrected;
+                    });
+                }
+                switch (opt) {
+                    case key.returnVal:
+                        return spy.and.callFake(function(val) {
+                            return val;
+                        });
+                    case key.returnModify:
+                        return spy.and.callFake(function (val, header) {
+                             return angular.extend(val, myCCModification);
+                        });
+                    case key.referenceModify:
+                        return spy.and.callFake(function(val) {
+                            angular.extend(val, myCCModification);
+                        });
+                    case key.returnObj:
+                        return spy.and.callFake(function(val) {
+                            return $q.when(angular.extend({}, myCC));
+                        });
+                    case key.returnArray:
+                        return spy.and.callFake(function(val) {
+                            return $q.when([angular.extend({}, myCC)]);
+                        });
+                    case key.returnUndefined:
+                        return spy;
+                    default:
+                        return spy;
+                }
+            }
+            return spy;
+        }
 
+        function createResource(uri, useInterceptor) {
+            return $resource(uri, {}, {
+                odata: {
+                    isArray: true,
+                    interceptor: {
+                        responseError: useInterceptor,
+                    }
+                }
+            });
+        }
+
+        beforeEach(function () {
+            $httpBackend.when('GET', key.httpError).respond(404, undefined, { 'response-id': key.httpError });
+            $httpBackend.when('GET', key.throwError).respond(200, [], { 'response-id': key.throwError });
+            $httpBackend.when('GET', key.throwArrayError).respond(200, { bad: 'I should be an array' }, { 'response-id': key.throwArrayError });
+            $httpBackend.when('GET', key.httpSuccess).respond(200, [angular.extend({}, myCC)], { 'response-id': key.httpSuccess });
         });
 
-        var cc = new CreditCard({name: 'Me'});
-
-        cc.$save();
-        $httpBackend.flush();
-
-        expect(cc.url).toBe('/new-id');
-      });
-
-      it('should pass the same transformed value to success callbacks and to promises', function() {
-        $httpBackend.expect('GET', '/CreditCard').respond(200, { value: 'original' });
-
-        var transformResponse = function(response) {
-          return { value: 'transformed' };
-        };
-
-        var CreditCard = $resource('/CreditCard', {}, {
-          call: {
-            method: 'get',
-            interceptor: { response: transformResponse }
-          }
-
+        it('should resolve with no interceptors or callbacks', function () {
+            var errorInterceptor = createMySpy('errorInterceptor');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(null, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve with no successCallback response', function () {
+            var errorInterceptor = createMySpy('errorInterceptor');
+            var successCallback = createMySpy('successCallback', key.returnUndefined);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve with no modifications from successCallback response', function () {
+            var errorInterceptor = createMySpy('errorInterceptor');
+            var successCallback = createMySpy('successCallback', key.returnVal);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve with modification from successCallback response', function () {
+            var errorInterceptor = createMySpy('errorInterceptor');
+            var successCallback = createMySpy('successCallback', key.returnModify);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].test).toBe(myCCModification.test);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.test).toBeDefined();
+            expect(cc.test).toBe(myCCModification.test);
+        });
+        it('should resolve with modification via successCallback parameter reference', function () {
+            var errorInterceptor = createMySpy('errorInterceptor');
+            var successCallback = createMySpy('successCallback', key.referenceModify);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].test).toBe(myCCModification.test);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.test).toBeDefined();
+            expect(cc.test).toBe(myCCModification.test);
+        });
+        it('should reject on http error with no errorInterceptor', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(successCallback).not.toHaveBeenCalled();
+            expect(errorCallback).toHaveBeenCalled();
+            expect(cc.$promise.$$state.value.status).toBe(404);
+        });
+        it('should reject on httpError from errorInterceptor', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpError);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(successCallback).not.toHaveBeenCalled();
+            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback.calls.mostRecent().args[0].status).toBe(404);
+        });
+        it('should resolve after errorInterceptor returns new obj', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.returnObj);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(null, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorInterceptor returns new array', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorInterceptor = createMySpy('errorInterceptor', key.returnArray);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().query(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0][0].number).toBe(myCC.number);
+            expect(cc[0].number).toBeDefined();
+            expect(cc[0].number).toBe(myCC.number);
+        });
+        it('should resolve after errorInterceptor returns new $http promise', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess, key.returnHttpPromise);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].headers('response-id')).toBe(key.httpError);
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorInterceptor returns new Resource without successCallback', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess);
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(null, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorInterceptor returns new Resource with successCallback', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].headers('response-id')).toBe(key.httpError);
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorInterceptor returns new Resource promise', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess, key.returnPromise);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorCallback returns new obj', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback', key.returnObj);
+            var cc = createResource(key.throwError).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback.calls.mostRecent().args[0]).toBe('The response returned no result');
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorCallback returns new array', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback', key.returnArray);
+            var cc = createResource(key.throwArrayError).odata().query(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorCallback).toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0][0].number).toBe(myCC.number);
+            expect(cc[0].number).toBeDefined();
+            expect(cc[0].number).toBe(myCC.number);
+        });
+        it('should resolve after errorCallback returns new Resource without successCallback', function () {
+            var errorCallback = createMySpy('errorCallback', key.httpSuccess);
+            var cc = createResource(key.throwError).odata().single(null, errorCallback);
+            $httpBackend.flush();
+            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback.calls.mostRecent().args[0]).toBe('The response returned no result');
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorCallback returns new Resource with successCallback', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback', key.httpSuccess);
+            var cc = createResource(key.throwError).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback.calls.mostRecent().args[0]).toBe('The response returned no result');
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+        });
+        it('should resolve after errorCallback returns new Resource promise', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback', key.httpSuccess, key.returnPromise);
+            var cc = createResource(key.throwError).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).toHaveBeenCalled();
+            expect(errorCallback.calls.mostRecent().args[0]).toBe('The response returned no result');
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
         });
 
-        var successValue,
-            promiseValue;
-
-        var cc = new CreditCard({ name: 'Me' });
-
-        var req = cc.$call({}, function(result) {
-          successValue = result;
-        });
-        req.then(function(result) {
-          promiseValue = result;
-        });
-
-        $httpBackend.flush();
-        expect(successValue).toEqual({ value: 'transformed' });
-        expect(promiseValue).toEqual({ value: 'transformed' });
-        expect(successValue).toBe(promiseValue);
-      });
     });
+
+
+      describe('single resource', function() {
+
+          it('should add $promise to the result object', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({id: 123, number: '9876'});
+              var cc = CreditCard.get({id: 123});
+
+              cc.$promise.then(callback);
+              expect(callback).not.toHaveBeenCalled();
+
+              $httpBackend.flush();
+
+              expect(callback).toHaveBeenCalledOnce();
+              expect(callback.calls.mostRecent().args[0]).toBe(cc);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should keep $promise around after resolution', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              var cc = CreditCard.get({ id: 123 });
+
+              cc.$promise.then(callback);
+              $httpBackend.flush();
+
+              callback = jasmine.createSpy();
+
+              cc.$promise.then(callback);
+              $rootScope.$apply(); //flush async queue
+
+              expect(callback).toHaveBeenCalledOnce();
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should keep the original promise after instance action', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              $httpBackend.expect('POST', '/CreditCard/123').respond({ id: 123, number: '9876' });
+
+              var cc = CreditCard.get({ id: 123 });
+              var originalPromise = cc.$promise;
+
+              cc.number = '666';
+              cc.$save({ id: 123 });
+
+              expect(cc.$promise).toBe(originalPromise);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should allow promise chaining', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              var cc = CreditCard.get({ id: 123 });
+
+              cc.$promise.then(function(value) { return 'new value'; }).then(callback);
+              $httpBackend.flush();
+
+              expect(callback).toHaveBeenCalledOnceWith('new value');
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should allow $promise error callback registration', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond(404, 'resource not found');
+              var cc = CreditCard.get({ id: 123 });
+
+              cc.$promise.then(null, callback);
+              $httpBackend.flush();
+
+              var response = callback.calls.mostRecent().args[0];
+
+              expect(response.data).toEqual('resource not found');
+              expect(response.status).toEqual(404);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should add $resolved boolean field to the result object', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              var cc = CreditCard.get({ id: 123 });
+
+              expect(cc.$resolved).toBe(false);
+
+              cc.$promise.then(callback);
+              expect(cc.$resolved).toBe(false);
+
+              $httpBackend.flush();
+
+              expect(cc.$resolved).toBe(true);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should set $resolved field to true when an error occurs', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond(404, 'resource not found');
+              var cc = CreditCard.get({ id: 123 });
+
+              cc.$promise.then(null, callback);
+              $httpBackend.flush();
+              expect(callback).toHaveBeenCalledOnce();
+              expect(cc.$resolved).toBe(true);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should keep $resolved true in all subsequent interactions', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              var cc = CreditCard.get({ id: 123 });
+              $httpBackend.flush();
+              expect(cc.$resolved).toBe(true);
+
+              $httpBackend.expect('POST', '/CreditCard/123').respond();
+              cc.$save({ id: 123 });
+              expect(cc.$resolved).toBe(true);
+              $httpBackend.flush();
+              expect(cc.$resolved).toBe(true);
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should return promise from action method calls', function() {
+              $httpBackend.expect('GET', '/CreditCard/123').respond({ id: 123, number: '9876' });
+              var cc = new CreditCard({ name: 'Mojo' });
+
+              expect(cc).toEqualData({ name: 'Mojo' });
+
+              cc.$get({ id: 123 }).then(callback);
+
+              $httpBackend.flush();
+              expect(callback).toHaveBeenCalledOnce();
+              expect(cc).toEqualData({ id: 123, number: '9876' });
+              callback = jasmine.createSpy();
+
+              $httpBackend.expect('POST', '/CreditCard').respond({ id: 1, number: '9' });
+
+              cc.$save().then(callback);
+
+              $httpBackend.flush();
+              expect(callback).toHaveBeenCalledOnce();
+              expect(cc).toEqualData({ id: 1, number: '9' });
+
+              expect(1).toBe(1);
+          });
+
+
+          it('should allow parsing a value from headers', function() {
+              // https://github.com/angular/angular.js/pull/2607#issuecomment-17759933
+              $httpBackend.expect('POST', '/CreditCard').respond(201, '', { 'Location': '/new-id' });
+
+              var parseUrlFromHeaders = function(response) {
+                  var resource = response.resource;
+                  resource.url = response.headers('Location');
+                  return resource;
+              };
+
+              var CreditCard = $resource('/CreditCard', {}, {
+                  save: {
+                      method: 'post',
+                      interceptor: { response: parseUrlFromHeaders }
+                  }
+
+              });
+
+              var cc = new CreditCard({ name: 'Me' });
+
+              cc.$save();
+              $httpBackend.flush();
+
+              expect(cc.url).toBe('/new-id');
+          });
+
+          it('should pass the same transformed value to success callbacks and to promises', function() {
+              $httpBackend.expect('GET', '/CreditCard').respond(200, { value: 'original' });
+
+              var transformResponse = function(response) {
+                  return { value: 'transformed' };
+              };
+
+              var CreditCard = $resource('/CreditCard', {}, {
+                  call: {
+                      method: 'get',
+                      interceptor: { response: transformResponse }
+                  }
+
+              });
+
+              var successValue,
+                  promiseValue;
+
+              var cc = new CreditCard({ name: 'Me' });
+
+              var req = cc.$call({}, function(result) {
+                  successValue = result;
+              });
+              req.then(function(result) {
+                  promiseValue = result;
+              });
+
+              $httpBackend.flush();
+              expect(successValue).toEqual({ value: 'transformed' });
+              expect(promiseValue).toEqual({ value: 'transformed' });
+              expect(successValue).toBe(promiseValue);
+          });
+      });
 
 
     describe('resource collection', function() {
@@ -1228,7 +1534,7 @@ function lookupDottedPath(obj, path) {
           isArray: true,
           interceptor: {
             responseError: function(response) {
-              return response;
+              return $q.reject(response);
             }
           }
         }
@@ -1239,7 +1545,7 @@ function lookupDottedPath(obj, path) {
 
       var ccs = CreditCard.query();
 
-      ccs.$promise.then(callback);
+      ccs.$promise.catch(callback);
 
       $httpBackend.flush();
       expect(callback).toHaveBeenCalledOnce();
@@ -1583,8 +1889,4 @@ describe('resource', function() {
     $httpBackend = $injector.get('$httpBackend');
     $resource = $injector.get('$resource');
   }));
-
-
-
-
 });
