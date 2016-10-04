@@ -1,5 +1,5 @@
 /* global it */
-/* global describe */
+/* global desc/ibe */
 /* global beforeEach */
 /* global inject */
 /* global module */
@@ -601,6 +601,52 @@
                 expect(angular.isArray(users))
                     .toBe(true);
                 $httpBackend.flush();
+            });
+        });
+        describe('Method call options', function() {
+            it('should work with custom urls', function () {
+                var successInterceptor = jasmine.createSpy('sucessInterceptor');
+                var ProductRating = $odataresource('/Products(:productId)/ProductService.Rate', { productId: "@ProductID" }, { update: { method: 'PUT', interceptor: { response: successInterceptor } } });
+                $httpBackend.expectPUT("/Products(5)/ProductService.Rate")
+                    .respond(204, undefined, undefined, 'No Content');
+                var productRating = new ProductRating();
+                productRating.ProductID = 5;
+                productRating.Rating = 10;
+                var response = productRating.$update();
+                $httpBackend.flush();
+                console.log(successInterceptor.calls.mostRecent());
+                expect(successInterceptor).toHaveBeenCalled();
+                expect(successInterceptor.calls.mostRecent().args[0].status).toBe(204);
+                expect(successInterceptor.calls.mostRecent().args[0].statusText).toBe('No Content');
+            });
+            it('should work with custom actions', function () {
+                var successInterceptor = jasmine.createSpy('sucessInterceptor');
+                var Products = $odataresource('/Products', {}, {
+                    rate: {
+                        method: 'PUT',
+                        url: '/Products(:productId)/ProductService.Rate',
+                        params: {
+                            productId: '@ProductID',
+                        },
+                        interceptor: {
+                            response: successInterceptor
+                        },
+                    },
+                }, { odatakey: 'ProductID' });
+                $httpBackend.expectGET('/Products(5)')
+                    .respond(200, { ProductID: 5, Rating: 9 });
+                var product = Products.odata().get(5);
+                $httpBackend.flush();
+                expect(product.ProductID).toBe(5);
+                expect(product.Rating).toBe(9);
+                $httpBackend.expectPUT("/Products(5)/ProductService.Rate")
+                    .respond(204, undefined, undefined, 'No Content');
+                product.Rating = 10;
+                product.$rate();
+                $httpBackend.flush();
+                expect(successInterceptor).toHaveBeenCalled();
+                expect(successInterceptor.calls.mostRecent().args[0].status).toBe(204);
+                expect(successInterceptor.calls.mostRecent().args[0].statusText).toBe('No Content');
             });
         });
         describe('OData v4 not explicitly specified', function() {
@@ -1321,6 +1367,37 @@
                 User.odata().query();
                 $httpBackend.flush();
                 expect(_config.ignoreLoadingBar).not.toBeDefined();
+            });
+        });
+        describe('Configuration and Options', function() {
+            var User, Metadata;
+            beforeEach(function () { });
+            it('should allow post initialization updates', function() {
+                $httpBackend.whenGET('/user$metadata').respond(200, '<metadata>test meteadata<metadata>');
+                $httpBackend.whenGET('/user').respond(200, [{ UserId: 5 }]);
+                Metadata = $odataresource('/user$metadata', {}, {
+                    get: {
+                        transformResponse: function(data) {
+                            return data.replace('<metadata>', '');
+                        },
+                    },
+                }, {});
+                User = $odataresource('/user', {}, {}, { isodatav4: true });
+                var user = User.odata().query();
+                $httpBackend.flush();
+                expect(user[0].UserId).toBe(5);
+                $httpBackend.expectPUT('/user').respond(500, undefined, undefined, 'Internal Server Error');
+                user[0].$update();
+                $httpBackend.flush();
+                var metadata = Metadata.odata().single(function (response) {
+                    expect(User.store.updateConfig(user)).toBe(false);
+                    User.store.updateConfig(user, '/user', {}, {}, { odatakey: 'UserId' });
+                });
+                $httpBackend.flush();
+                $httpBackend.expectPUT('/user(6)').respond(204, undefined, undefined, 'No Content');
+                user[0].UserId = 6;
+                user[0].$update();
+                $httpBackend.flush();
             });
         });
     });

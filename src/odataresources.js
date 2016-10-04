@@ -93,7 +93,8 @@
           forEach = angular.forEach,
           extend = angular.extend,
           copy = angular.copy,
-          isFunction = angular.isFunction;
+          isFunction = angular.isFunction,
+          resourceStore = [];
 
         /**
          * We need our custom method because encodeURIComponent is too aggressive and doesn't follow
@@ -267,6 +268,88 @@
             return data;
           };
 
+          Resource.store = function (resource) {
+              var exists = resourceStore.filter(function (filter) {
+                  return filter.resource === resource;
+              });
+              if (exists.length) {
+                  Array.prototype.splice.call(arguments, 0, 1, exists[0]);
+                  return angular.extend.apply(angular, arguments);
+              }
+              Array.prototype.splice.call(arguments, 0, 1, { resource: resource });
+              exists = angular.extend.apply(angular, arguments);
+              resourceStore.push(exists);
+              return exists;
+          };
+
+          Resource.isResource = function(target) {
+              return resourceStore.filter(function(filter) {
+                  return filter.resource === target;
+              }).length;
+          };
+
+          Resource.store.get = function(target) {
+              var hash = resourceStore.filter(function(filter) {
+                  return filter.resource === target;
+              });
+              return hash.length ? hash[0] : null;
+          };
+
+          Resource.store.getHeaders = function(target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.headers : null;
+          };
+
+          Resource.store.copyHeaders = function(target, source) {
+              return Resource.store(target, { headers: Resource.store.getHeaders(source) });
+          };
+
+          Resource.store.getConfig = function(target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.config : null;
+          };
+
+          Resource.store.updateConfig = function (target) {
+              if (arguments.length < 2)
+                  return false;
+              var configPropNames = ['url', 'paramDefaults', 'action', 'options'];
+              var settings = arguments.length > 2 && angular.isString(arguments[1]) ? Array.prototype.slice.call(arguments, 1, 5).reduce(function (prev, config, index) {
+                  prev[configPropNames[index]] = config;
+                  return prev;
+              }, {}) : arguments[1];
+              if (Resource.isResource(settings))
+                  settings = Resource.store.getConfig(settings);
+              // If this library is updated to support 1.4+ change to use merge (not available in angular 1.3 which is what unit tests currently use).
+              angular.extend(actions, settings.actions || {});
+              angular.extend(paramDefaults, settings.paramDefaults || {});
+              angular.extend(options, settings.options || {});
+              if (angular.isDefined(settings.url) && angular.isString(settings.url))
+                  url = settings.url;
+              route = new Route(url, options);
+              Resource.store(target, {
+                  config: {
+                      url: url,
+                      paramDefaults: paramDefaults,
+                      actions: actions,
+                      options: options,
+                  },
+                  pendingCorrection: false,
+              });
+              return true;
+          };
+
+          Resource.store.pendingCorrection = function (target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.pendingCorrection || false : false;
+          };
+
+          Resource.store.getRefreshingResource = function(target) {
+              var stored = resourceStore.filter(function(filter) {
+                  return filter.refreshedAs === target;
+              });
+              return stored ? stored[0] : null;
+          };
+
           forEach(actions, function(action, name) {
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
@@ -326,6 +409,8 @@
               var responseErrorInterceptor = action.interceptor && action.interceptor.responseError ||
                 undefined;
 
+              addRefreshMethod(value, persistence);
+
               forEach(action, function(value, key) {
                 if (key != 'params' && key != 'isArray' && key != 'interceptor') {
                   httpConfig[key] = copy(value);
@@ -353,106 +438,171 @@
               if (options.ignoreLoadingBar)
                 httpConfig.ignoreLoadingBar = true;
 
-              var promise = $http(httpConfig).then(function(response) {
-                var data = response.data,
-                  promise = value.$promise;
+                function httpSuccessHandler(response) {
+                    var data = response.data,
+                        promise = value.$promise;
 
-                if(data && angular.isNumber(data['@odata.count'])) {
-                    data.count = data['@odata.count'];
+                    if(data && angular.isNumber(data['@odata.count'])) {
+                        data.count = data['@odata.count'];
+                    }
+
+                    if (data && (angular.isString(data['@odata.context']) || angular.isString(data['odata.metadata']) ) && data.value && angular.isArray(data.value)) {
+                        var fullObject = data;
+                        data = data.value;
+                        for (var property in fullObject) {
+                            if (property !== "value") {
+                                value[property] = fullObject[property];
+                            }
+                        }
+                    }
+
+
+                    if (data) {
+                        // Need to convert action.isArray to boolean in case it is undefined
+                        // jshint -W018
+                        if (angular.isArray(data) !== (!isSingleElement && !! action.isArray) && !forceSingleElement) {
+                            throw $resourceMinErr('badcfg',
+                                'Error in resource configuration for action `{0}`. Expected response to ' +
+                                'contain an {1} but got an {2} (Request: {3} {4})', name, (!isSingleElement && action.isArray) ? 'array' : 'object',
+                                angular.isArray(data) ? 'array' : 'object', httpConfig.method, httpConfig.url);
+                        }
+
+                        if(angular.isArray(data) && forceSingleElement){
+                            if(data.length>0){
+                                data = data[0];
+                            }else{
+                                throw "The response returned no result";
+                            }
+                        }
+
+                        // jshint +W018
+                        if (!isSingleElement && action.isArray && isNaN(parseInt(data))) {
+                            value.length = 0;
+                            forEach(data, function(item) {
+                                if (typeof item === "object") {
+                                    var newResource = new Resource(item);
+                                    addRefreshMethod(newResource, persistence, false);
+                                    value.push(newResource);
+                                } else {
+                                    // Valid JSON values may be string literals, and these should not be converted
+                                    // into objects. These items will not have access to the Resource prototype
+                                    // methods, but unfortunately there
+                                    value.push(item);
+                                }
+                            });
+                        } else {
+                            shallowClearAndCopy(data, value);
+                            value.$promise = promise;
+                        }
+                    }
+
+                    if(angular.isNumber(data) && isSingleElement){
+                        value.result = data;
+                    }
+                    else if(!isNaN(parseInt(data)) && isSingleElement){
+                        value.result = parseInt(data);
+                    }
+
+                    value.$resolved = true;
+
+                    response.resource = value;
+
+                    Resource.store(value, { headers: response.headers() });
+
+                    return responseInterceptor(response) || response;
                 }
 
-                if (data && (angular.isString(data['@odata.context']) || angular.isString(data['odata.metadata']) ) && data.value && angular.isArray(data.value)) {
-                  var fullObject = data;
-                  data = data.value;
-                  for (var property in fullObject) {
-                    if (property !== "value") {
-                      value[property] = fullObject[property];
+                // Input: httpResponse error object
+                // Output: Rejection wrapped error object, rejected non promise response from errorInterceptor, or promise from errorInterceptor with errorCorrectionHandler appended to chain
+                function httpErrorHandler(response) {
+                    value.$resolved = true;
+                    var refreshingResource = Resource.store.getRefreshingResource(value);
+                    if (refreshingResource && refreshingResource.preventErrorLooping) {
+                        Resource.store(refreshingResource.resource, { preventErrorLooping: false });
+                        return $q.reject(response);
                     }
-                  }
+                    Resource.store(value, { headers: response.headers(), preventErrorLooping: true });
+                    return chooseErrorResponsePromiseChain((responseErrorInterceptor || noop)(response) || response);
                 }
 
+                function callbackSuccessHandler(response) {
+                    (success || noop)(response, Resource.store.getHeaders(value));
+                    return response;
+                }
 
-                if (data) {
-                  // Need to convert action.isArray to boolean in case it is undefined
-                  // jshint -W018
-                  if (angular.isArray(data) !== (!isSingleElement && !! action.isArray) && !forceSingleElement) {
-                    throw $resourceMinErr('badcfg',
-                      'Error in resource configuration for action `{0}`. Expected response to ' +
-                      'contain an {1} but got an {2} (Request: {3} {4})', name, (!isSingleElement && action.isArray) ? 'array' : 'object',
-                      angular.isArray(data) ? 'array' : 'object', httpConfig.method, httpConfig.url);
-                  }
-
-                  if(angular.isArray(data) && forceSingleElement){
-                    if(data.length>0){
-                      data = data[0];
-                    }else{
-                      throw "The response returned no result";
+                // Input: string of thrown error from httpSuccessCallback, rejection from httpErrorHandler
+                // Output: Rejection wrapped error output rejected non promise response from errorCallback, or promise from errorCallback with errorCorrectionHandler appended to chain
+                function callbackErrorHandler(response) {
+                    var refreshingResource = Resource.store.getRefreshingResource(value);
+                    if (refreshingResource && refreshingResource.preventErrorLooping) {
+                        Resource.store(refreshingResource.resource, { preventErrorLooping: false });
+                        return $q.reject(response);
                     }
-                  }
-
-                  // jshint +W018
-                  if (!isSingleElement && action.isArray && isNaN(parseInt(data))) {
-                    value.length = 0;
-                    forEach(data, function(item) {
-                      if (typeof item === "object") {
-                          var newResource = new Resource(item);
-                          addRefreshMethod(newResource, persistence, false);
-                          value.push(newResource);
-                      } else {
-                        // Valid JSON values may be string literals, and these should not be converted
-                        // into objects. These items will not have access to the Resource prototype
-                        // methods, but unfortunately there
-                        value.push(item);
-                      }
+                    Resource.store(value, { preventErrorLooping: true });
+                    return chooseErrorResponsePromiseChain((error || noop)(response) || response).then(function (newResponse) {
+                        // Allow a successful correction at this stage to notify sucessCallback.
+                        (success || noop)(newResponse, Resource.store.getHeaders(value));
+                        return newResponse;
                     });
-                  } else {
-                    shallowClearAndCopy(data, value);
+                }
+
+                // Error Correcction methods
+                function chooseErrorResponsePromiseChain(response) {
+                    if (angular.isDefined(response) && angular.isObject(response) && angular.isObject(response.$correction)) {
+                        Resource.store.updateConfig(value, response.$correction);
+                        var refreshed = value.$refresh();
+                        Resource.store(value, { refreshedAs: refreshed });
+                        return refreshed.$promise.then(allowErrorCorrectionHandler);
+                    }
+                    if (angular.isDefined(response) && angular.isDefined(response.$value) && response.$correction) {
+                        Resource.store(value, { pendingCorrection: response.$correction });
+                        response = response.$value;
+                    }
+                    if (Resource.isResource(response))
+                        return response.$promise.then(allowErrorCorrectionHandler);
+                    if (angular.isDefined(response) && angular.isFunction(response.then))
+                        return response.then(allowErrorCorrectionHandler);
+                    return $q.reject(response);
+                }
+
+                // Assume a Resource or promise ($http, or $q.resolve) was passed to errorInterceptor or errorCallback
+                function allowErrorCorrectionHandler(response) {
+                    if (Resource.isResource(response)) {
+                        Resource.store.copyHeaders(value, response);
+                        if (Resource.store.pendingCorrection(value))
+                            Resource.store.updateConfig(value, response);
+                        Resource.store(value, { preventErrorLooping: false });
+                        shallowClearAndCopy(response, value);
+                        return value;
+                    }
+                    if (angular.isDefined(response) && angular.isObject(response) && angular.isFunction(response.headers)) {
+                        return $q.when(response).then(httpSuccessHandler);
+                    }
+                    return $q.when({ data: response, headers: function() { return null; }}).then(httpSuccessHandler);
+                }
+
+                var promise = $http(httpConfig)
+                    .then(httpSuccessHandler, httpErrorHandler)         // Http response phase (transform response into final Resource object and call interceptors)
+                    .then(callbackSuccessHandler, callbackErrorHandler);// Callback phase (errorCallback has opportrunity to address issues from errors being thrown in http response phase)
+
+                if (!isInstanceCall) {
+                    // we are creating instance / collection
+                    // - set the initial promise
+                    // - return the instance / collection
                     value.$promise = promise;
-                  }
+                    value.$resolved = false;
+                    Resource.store(value, {
+                        config: {
+                            url: url,
+                            paramDefaults: paramDefaults,
+                            actions: actions,
+                            options: options,
+                        },
+                    });
+                    return value;
                 }
 
-                if(angular.isNumber(data) && isSingleElement){
-                  value.result = data;
-                }
-                else if(!isNaN(parseInt(data)) && isSingleElement){
-                  value.result = parseInt(data);
-                }
-
-                value.$resolved = true;
-
-                  addRefreshMethod(value, persistence);
-
-
-                response.resource = value;
-
-                return response;
-              }, function(response) {
-                value.$resolved = true;
-
-                (error || noop)(response);
-
-                return $q.reject(response);
-              });
-
-              promise = promise.then(
-                function(response) {
-                  var value = responseInterceptor(response);
-                  (success || noop)(value, response.headers);
-                  return value;
-                },
-                responseErrorInterceptor);
-
-              if (!isInstanceCall) {
-                // we are creating instance / collection
-                // - set the initial promise
-                // - return the instance / collection
-                value.$promise = promise;
-                value.$resolved = false;
-                
-                return value;
-              }
-
-              // instance call
+                // instance call
               return promise;
             };
 
@@ -507,7 +657,7 @@
                 var multiple = this instanceof Array;
                 // Refresh a normal Resource or Array of Resources
                 return Resource[multiple ? 'query' : 'get'].call(undefined, {}, multiple ? {} : this, success, error, multiple, (!multiple? '?' : '') + queryString, !multiple, false, this.$refresh.$$persistence);
-                };
+            };
 
           Resource.bind = function(additionalParamDefaults) {
             return resourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);
