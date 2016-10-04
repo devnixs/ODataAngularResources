@@ -897,12 +897,13 @@ function lookupDottedPath(obj, path) {
             httpSuccess: '/MyCreditCard',   // errorInterceptor and errorCallback
             returnPromise: 0,               // errorInterceptor and errorCallback
             returnHttpPromise: 1,           // errorInterceptor and errorCallback
-            returnObj: 2,                   // errorInterceptor and errorCallback
-            returnArray: 3,                 // errorInterceptor and errorCallback
-            returnVal: 4,                   // successCallback
-            returnModify: 5,                // successCallback
-            returnUndefined: 6,             // successCallback
-            referenceModify: 7,             // successCallback
+            returnCorrection: 2,            // errorInterceptor and errorCallback
+            returnObj: 3,                   // errorInterceptor and errorCallback
+            returnArray: 4,                 // errorInterceptor and errorCallback
+            returnVal: 5,                   // successCallback
+            returnModify: 6,                // successCallback
+            returnUndefined: 7,             // successCallback
+            referenceModify: 8,             // successCallback
         };
 
         function createMySpy(name, opt, opt2) {
@@ -914,9 +915,17 @@ function lookupDottedPath(obj, path) {
                             return $http({ method: 'GET', url: opt });
                         });
                     }
-                    return spy.and.callFake(function () {
-                        var corrected = createResource(opt).odata().single();
-                        return angular.isDefined(opt2) && opt2 === key.returnPromise ? corrected.$promise : corrected;
+                    return spy.and.callFake(function() {
+                        var returnPromise = opt2 === key.returnPromise || angular.isArray(opt2) && opt2.indexOf(key.returnPromise) !== -1;
+                        var returnCorrection = opt2 === key.returnCorrection || angular.isArray(opt2) && opt2.indexOf(key.returnCorrection) !== -1;
+                        var corrected = createResource(opt);
+                        var newResource = corrected.odata().single();
+                        if (returnCorrection)
+                            return {
+                                $correction: true,
+                                $value: returnPromise ? newResource.$promise : newResource
+                            };
+                        return returnPromise ? newResource.$promise : newResource;
                     });
                 }
                 switch (opt) {
@@ -1130,6 +1139,52 @@ function lookupDottedPath(obj, path) {
             expect(errorCallback).not.toHaveBeenCalled();
             expect(cc.number).toBeDefined();
             expect(cc.number).toBe(myCC.number);
+        });
+        it('should fail on another get after errorInterceptor returns new Resource without correction', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].headers('response-id')).toBe(key.httpError);
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+            errorInterceptor.calls.reset();
+            cc.$odata().single();
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+        });
+        it('should resolve on another get after errorInterceptor returns new Resource with correction', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess, [key.returnHttpPromise, key.returnCorrection]);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].headers('response-id')).toBe(key.httpError);
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+            errorInterceptor.calls.reset();
+            successCallback.calls.reset();
+            errorCallback.calls.reset();
+            cc.$odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
         });
         it('should resolve after errorCallback returns new obj', function () {
             var successCallback = createMySpy('successCallback');

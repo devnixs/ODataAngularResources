@@ -288,18 +288,31 @@
               }).length;
           };
 
-          Resource.store.getHeaders = function(target) {
-              var hash = resourceStore.filter(function (filter) {
+          Resource.store.get = function(target) {
+              var hash = resourceStore.filter(function(filter) {
                   return filter.resource === target;
               });
-              return hash.length ? hash[0].headers : null;
+              return hash.length ? hash[0] : null;
+          };
+
+          Resource.store.getHeaders = function(target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.headers : null;
           };
 
           Resource.store.copyHeaders = function(target, source) {
               return Resource.store(target, { headers: Resource.store.getHeaders(source) });
           };
 
+          Resource.store.getConfig = function(target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.config : null;
+          };
 
+          Resource.store.pendingCorrection = function (target) {
+              var stored = Resource.store.get(target);
+              return stored ? stored.pendingCorrection || false : false;
+          };
 
           forEach(actions, function(action, name) {
 
@@ -486,6 +499,10 @@
 
                 // Error Correcction methods
                 function chooseErrorResponsePromiseChain(response) {
+                    if (angular.isDefined(response) && angular.isDefined(response.$value) && response.$correction) {
+                        Resource.store(value, { pendingCorrection: true });
+                        response = response.$value;
+                    }
                     if (Resource.isResource(response))
                         return response.$promise.then(allowErrorCorrectionHandler);
                     if (angular.isDefined(response) && angular.isFunction(response.then))
@@ -497,6 +514,17 @@
                 function allowErrorCorrectionHandler(response) {
                     if (Resource.isResource(response)) {
                         Resource.store.copyHeaders(value, response);
+                        if (Resource.store.pendingCorrection(value)) {
+                            var newConfig = Resource.store.getConfig(response);
+                            if (newConfig) {
+                                angular.extend(actions, newConfig.actions);
+                                angular.extend(paramDefaults, newConfig.paramDefaults);
+                                angular.extend(options, newConfig.options);
+                                url = newConfig.url;
+                                route = new Route(url, options);
+                                Resource.store(value, newConfig, { pendingCorrection: false });
+                            }
+                        }
                         shallowClearAndCopy(response, value);
                         return value;
                     }
@@ -510,17 +538,24 @@
                     .then(httpSuccessHandler, httpErrorHandler)         // Http response phase (transform response into final Resource object and call interceptors)
                     .then(callbackSuccessHandler, callbackErrorHandler);// Callback phase (errorCallback has opportrunity to address issues from errors being thrown in http response phase)
 
-              if (!isInstanceCall) {
-                // we are creating instance / collection
-                // - set the initial promise
-                // - return the instance / collection
-                value.$promise = promise;
-                value.$resolved = false;
-                Resource.store(value);
-                return value;
-              }
+                if (!isInstanceCall) {
+                    // we are creating instance / collection
+                    // - set the initial promise
+                    // - return the instance / collection
+                    value.$promise = promise;
+                    value.$resolved = false;
+                    Resource.store(value, {
+                        config: {
+                            url: url,
+                            paramDefaults: paramDefaults,
+                            actions: actions,
+                            options: options,
+                        },
+                    });
+                    return value;
+                }
 
-              // instance call
+                // instance call
               return promise;
             };
 
