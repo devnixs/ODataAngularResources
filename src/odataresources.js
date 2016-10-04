@@ -485,16 +485,18 @@
                 }
 
                 function callbackSuccessHandler(response) {
-                    return (success || noop)(response, Resource.store.getHeaders(value)) || response;
+                    (success || noop)(response, Resource.store.getHeaders(value));
+                    return response;
                 }
 
                 // Input: string of thrown error from httpSuccessCallback, rejection from httpErrorHandler
                 // Output: Rejection wrapped error output rejected non promise response from errorCallback, or promise from errorCallback with errorCorrectionHandler appended to chain
                 function callbackErrorHandler(response) {
                     return chooseErrorResponsePromiseChain((error || noop)(response) || response).then(function (newResponse) {
-                            // Allow a successful correction at this stage to notify sucessCallback.
-                            return (success || noop)(newResponse, Resource.store.getHeaders(value)) || newResponse;
-                        });
+                        // Allow a successful correction at this stage to notify sucessCallback.
+                        (success || noop)(newResponse, Resource.store.getHeaders(value));
+                        return newResponse;
+                    });
                 }
 
                 // Error Correcction methods

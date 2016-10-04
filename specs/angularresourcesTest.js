@@ -935,7 +935,7 @@ function lookupDottedPath(obj, path) {
                         });
                     case key.returnModify:
                         return spy.and.callFake(function (val, header) {
-                             return angular.extend(val, myCCModification);
+                            return angular.extend({}, val, myCCModification);
                         });
                     case key.referenceModify:
                         return spy.and.callFake(function(val) {
@@ -999,20 +999,7 @@ function lookupDottedPath(obj, path) {
             expect(cc.number).toBeDefined();
             expect(cc.number).toBe(myCC.number);
         });
-        it('should resolve with no modifications from successCallback response', function () {
-            var errorInterceptor = createMySpy('errorInterceptor');
-            var successCallback = createMySpy('successCallback', key.returnVal);
-            var errorCallback = createMySpy('errorCallback');
-            var cc = createResource(key.httpSuccess, errorInterceptor).odata().single(successCallback, errorCallback);
-            $httpBackend.flush();
-            expect(errorInterceptor).not.toHaveBeenCalled();
-            expect(successCallback).toHaveBeenCalled();
-            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
-            expect(errorCallback).not.toHaveBeenCalled();
-            expect(cc.number).toBeDefined();
-            expect(cc.number).toBe(myCC.number);
-        });
-        it('should resolve with modification from successCallback response', function () {
+        it('should resolve and successCallback response should not modify promise chain value', function () {
             var errorInterceptor = createMySpy('errorInterceptor');
             var successCallback = createMySpy('successCallback', key.returnModify);
             var errorCallback = createMySpy('errorCallback');
@@ -1020,10 +1007,11 @@ function lookupDottedPath(obj, path) {
             $httpBackend.flush();
             expect(errorInterceptor).not.toHaveBeenCalled();
             expect(successCallback).toHaveBeenCalled();
-            expect(successCallback.calls.mostRecent().args[0].test).toBe(myCCModification.test);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(successCallback.calls.mostRecent().returnValue.test).toBe(myCCModification.test);
             expect(errorCallback).not.toHaveBeenCalled();
-            expect(cc.test).toBeDefined();
-            expect(cc.test).toBe(myCCModification.test);
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
         });
         it('should resolve with modification via successCallback parameter reference', function () {
             var errorInterceptor = createMySpy('errorInterceptor');
