@@ -642,7 +642,7 @@ User = $odataresource('/user', {}, {
         responseError: function(response) {
           // response is the returned $http result
           apiLog.logError(response, response.headers());
-          return { $correction: { url: 'https://fixedUrl.com/};
+          return { $correction: { url: 'https://fixedUrl.com/' } };
         },
       },
     },
