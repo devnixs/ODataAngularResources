@@ -1105,6 +1105,13 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
               return stored ? stored.pendingCorrection || false : false;
           };
 
+          Resource.store.getRefreshingResource = function(target) {
+              var stored = resourceStore.filter(function(filter) {
+                  return filter.refreshedAs === target;
+              });
+              return stored ? stored[0] : null;
+          };
+
           forEach(actions, function(action, name) {
 
             var hasBody = /^(POST|PUT|PATCH)$/i.test(action.method);
@@ -1163,6 +1170,8 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 defaultResponseInterceptor;
               var responseErrorInterceptor = action.interceptor && action.interceptor.responseError ||
                 undefined;
+
+              addRefreshMethod(value, persistence);
 
               forEach(action, function(value, key) {
                 if (key != 'params' && key != 'isArray' && key != 'interceptor') {
@@ -1258,8 +1267,6 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
                     value.$resolved = true;
 
-                    addRefreshMethod(value, persistence);
-
                     response.resource = value;
 
                     Resource.store(value, { headers: response.headers() });
@@ -1271,7 +1278,12 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 // Output: Rejection wrapped error object, rejected non promise response from errorInterceptor, or promise from errorInterceptor with errorCorrectionHandler appended to chain
                 function httpErrorHandler(response) {
                     value.$resolved = true;
-                    Resource.store(value, { headers: response.headers() });
+                    var refreshingResource = Resource.store.getRefreshingResource(value);
+                    if (refreshingResource && refreshingResource.preventErrorLooping) {
+                        Resource.store(refreshingResource.resource, { preventErrorLooping: false });
+                        return $q.reject(response);
+                    }
+                    Resource.store(value, { headers: response.headers(), preventErrorLooping: true });
                     return chooseErrorResponsePromiseChain((responseErrorInterceptor || noop)(response) || response);
                 }
 
@@ -1283,6 +1295,12 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 // Input: string of thrown error from httpSuccessCallback, rejection from httpErrorHandler
                 // Output: Rejection wrapped error output rejected non promise response from errorCallback, or promise from errorCallback with errorCorrectionHandler appended to chain
                 function callbackErrorHandler(response) {
+                    var refreshingResource = Resource.store.getRefreshingResource(value);
+                    if (refreshingResource && refreshingResource.preventErrorLooping) {
+                        Resource.store(refreshingResource.resource, { preventErrorLooping: false });
+                        return $q.reject(response);
+                    }
+                    Resource.store(value, { preventErrorLooping: true });
                     return chooseErrorResponsePromiseChain((error || noop)(response) || response).then(function (newResponse) {
                         // Allow a successful correction at this stage to notify sucessCallback.
                         (success || noop)(newResponse, Resource.store.getHeaders(value));
@@ -1292,8 +1310,14 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
 
                 // Error Correcction methods
                 function chooseErrorResponsePromiseChain(response) {
+                    if (angular.isDefined(response) && angular.isObject(response) && angular.isObject(response.$correction)) {
+                        correctSettings(value, response.$correction);
+                        var refreshed = value.$refresh();
+                        Resource.store(value, { refreshedAs: refreshed });
+                        return refreshed.$promise.then(allowErrorCorrectionHandler);
+                    }
                     if (angular.isDefined(response) && angular.isDefined(response.$value) && response.$correction) {
-                        Resource.store(value, { pendingCorrection: true });
+                        Resource.store(value, { pendingCorrection: response.$correction });
                         response = response.$value;
                     }
                     if (Resource.isResource(response))
@@ -1307,17 +1331,9 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 function allowErrorCorrectionHandler(response) {
                     if (Resource.isResource(response)) {
                         Resource.store.copyHeaders(value, response);
-                        if (Resource.store.pendingCorrection(value)) {
-                            var newConfig = Resource.store.getConfig(response);
-                            if (newConfig) {
-                                angular.extend(actions, newConfig.actions);
-                                angular.extend(paramDefaults, newConfig.paramDefaults);
-                                angular.extend(options, newConfig.options);
-                                url = newConfig.url;
-                                route = new Route(url, options);
-                                Resource.store(value, newConfig, { pendingCorrection: false });
-                            }
-                        }
+                        if (Resource.store.pendingCorrection(value))
+                            correctSettings(value, response);
+                        Resource.store(value, { preventErrorLooping: false });
                         shallowClearAndCopy(response, value);
                         return value;
                     }
@@ -1325,6 +1341,27 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                         return $q.when(response).then(httpSuccessHandler);
                     }
                     return $q.when({ data: response, headers: function() { return null; }}).then(httpSuccessHandler);
+                }
+
+                function correctSettings(target, settings) {
+                    if (Resource.isResource(settings))
+                        settings = Resource.store.getConfig(settings);
+                    angular.extend(actions, settings.actions || { });
+                    angular.extend(paramDefaults, settings.paramDefaults || { });
+                    angular.extend(options, settings.options || { });
+                    if (angular.isDefined(settings.url) && angular.isString(settings.url))
+                        url = settings.url;
+                    route = new Route(url, options);
+                    Resource.store(value, {
+                        config: {
+                            url: url,
+                            paramDefaults: paramDefaults,
+                            actions: actions,
+                            options: options,
+                        },
+                        pendingCorrection: false,
+                    });
+                    return true;
                 }
 
                 var promise = $http(httpConfig)
@@ -1403,7 +1440,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 var multiple = this instanceof Array;
                 // Refresh a normal Resource or Array of Resources
                 return Resource[multiple ? 'query' : 'get'].call(undefined, {}, multiple ? {} : this, success, error, multiple, (!multiple? '?' : '') + queryString, !multiple, false, this.$refresh.$$persistence);
-                };
+            };
 
           Resource.bind = function(additionalParamDefaults) {
             return resourceFactory(url, extend({}, paramDefaults, additionalParamDefaults), actions);

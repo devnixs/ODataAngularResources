@@ -898,12 +898,13 @@ function lookupDottedPath(obj, path) {
             returnPromise: 0,               // errorInterceptor and errorCallback
             returnHttpPromise: 1,           // errorInterceptor and errorCallback
             returnCorrection: 2,            // errorInterceptor and errorCallback
-            returnObj: 3,                   // errorInterceptor and errorCallback
-            returnArray: 4,                 // errorInterceptor and errorCallback
-            returnVal: 5,                   // successCallback
-            returnModify: 6,                // successCallback
-            returnUndefined: 7,             // successCallback
-            referenceModify: 8,             // successCallback
+            returnCorrectionSettings: 3,    // errorInterceptor and errorCallback
+            returnObj: 4,                   // errorInterceptor and errorCallback
+            returnArray: 5,                 // errorInterceptor and errorCallback
+            returnVal: 6,                   // successCallback
+            returnModify: 7,                // successCallback
+            returnUndefined: 8,             // successCallback
+            referenceModify: 9,             // successCallback
         };
 
         function createMySpy(name, opt, opt2) {
@@ -918,6 +919,9 @@ function lookupDottedPath(obj, path) {
                     return spy.and.callFake(function() {
                         var returnPromise = opt2 === key.returnPromise || angular.isArray(opt2) && opt2.indexOf(key.returnPromise) !== -1;
                         var returnCorrection = opt2 === key.returnCorrection || angular.isArray(opt2) && opt2.indexOf(key.returnCorrection) !== -1;
+                        var returnCorrectionSettings = opt2 === key.returnCorrectionSettings || angular.isArray(opt) && opt2.indexOf(key.returnCorrectionSettings) !== -1;
+                        if (returnCorrectionSettings)
+                            return { $correction: { url: opt } };
                         var corrected = createResource(opt);
                         var newResource = corrected.odata().single();
                         if (returnCorrection)
@@ -1173,6 +1177,50 @@ function lookupDottedPath(obj, path) {
             expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
             expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
             expect(errorCallback).not.toHaveBeenCalled();
+        });
+        it('should resolve on another get after errorInterceptor returns correction settings', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpSuccess, key.returnCorrectionSettings);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).toHaveBeenCalled();
+            expect(errorInterceptor.calls.mostRecent().args[0].headers('response-id')).toBe(key.httpError);
+            expect(errorInterceptor.calls.mostRecent().args[0].status).toBe(404);
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+            expect(cc.number).toBeDefined();
+            expect(cc.number).toBe(myCC.number);
+            errorInterceptor.calls.reset();
+            successCallback.calls.reset();
+            errorCallback.calls.reset();
+            cc.$odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor).not.toHaveBeenCalled();
+            expect(successCallback).toHaveBeenCalled();
+            expect(successCallback.calls.mostRecent().args[1]['response-id']).toBe(key.httpSuccess);
+            expect(successCallback.calls.mostRecent().args[0].number).toBe(myCC.number);
+            expect(errorCallback).not.toHaveBeenCalled();
+        });
+        it('should fail after errorInterceptor returns invalid correction settings (infinate loop check)', function () {
+            var errorInterceptor = createMySpy('errorInterceptor', key.httpError, key.returnCorrectionSettings);
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback');
+            var cc = createResource(key.httpError, errorInterceptor).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(errorInterceptor.calls.count()).toBe(1);
+            expect(successCallback).not.toHaveBeenCalled();
+            expect(errorCallback).toHaveBeenCalled();
+        });
+        it('should fail after errorCallback returns invalid correction settings (infinate loop check)', function () {
+            var successCallback = createMySpy('successCallback');
+            var errorCallback = createMySpy('errorCallback', key.throwError, key.returnCorrectionSettings);
+            var cc = createResource(key.throwError).odata().single(successCallback, errorCallback);
+            $httpBackend.flush();
+            expect(successCallback).not.toHaveBeenCalled();
+            expect(errorCallback.calls.count()).toBe(1);
         });
         it('should resolve after errorCallback returns new obj', function () {
             var successCallback = createMySpy('successCallback');
