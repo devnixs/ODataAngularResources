@@ -1100,6 +1100,35 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
               return stored ? stored.config : null;
           };
 
+          Resource.store.updateConfig = function (target) {
+              if (arguments.length < 2)
+                  return false;
+              var configPropNames = ['url', 'paramDefaults', 'action', 'options'];
+              var settings = arguments.length > 2 && angular.isString(arguments[1]) ? Array.prototype.slice.call(arguments, 1, 5).reduce(function (prev, config, index) {
+                  prev[configPropNames[index]] = config;
+                  return prev;
+              }, {}) : arguments[1];
+              if (Resource.isResource(settings))
+                  settings = Resource.store.getConfig(settings);
+              // If this library is updated to support 1.4+ change to use merge (not available in angular 1.3 which is what unit tests currently use).
+              angular.extend(actions, settings.actions || {});
+              angular.extend(paramDefaults, settings.paramDefaults || {});
+              angular.extend(options, settings.options || {});
+              if (angular.isDefined(settings.url) && angular.isString(settings.url))
+                  url = settings.url;
+              route = new Route(url, options);
+              Resource.store(target, {
+                  config: {
+                      url: url,
+                      paramDefaults: paramDefaults,
+                      actions: actions,
+                      options: options,
+                  },
+                  pendingCorrection: false,
+              });
+              return true;
+          };
+
           Resource.store.pendingCorrection = function (target) {
               var stored = Resource.store.get(target);
               return stored ? stored.pendingCorrection || false : false;
@@ -1311,7 +1340,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                 // Error Correcction methods
                 function chooseErrorResponsePromiseChain(response) {
                     if (angular.isDefined(response) && angular.isObject(response) && angular.isObject(response.$correction)) {
-                        correctSettings(value, response.$correction);
+                        Resource.store.updateConfig(value, response.$correction);
                         var refreshed = value.$refresh();
                         Resource.store(value, { refreshedAs: refreshed });
                         return refreshed.$promise.then(allowErrorCorrectionHandler);
@@ -1332,7 +1361,7 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                     if (Resource.isResource(response)) {
                         Resource.store.copyHeaders(value, response);
                         if (Resource.store.pendingCorrection(value))
-                            correctSettings(value, response);
+                            Resource.store.updateConfig(value, response);
                         Resource.store(value, { preventErrorLooping: false });
                         shallowClearAndCopy(response, value);
                         return value;
@@ -1341,27 +1370,6 @@ factory('$odataProvider', ['$odataOperators', '$odataBinaryOperation', '$odataPr
                         return $q.when(response).then(httpSuccessHandler);
                     }
                     return $q.when({ data: response, headers: function() { return null; }}).then(httpSuccessHandler);
-                }
-
-                function correctSettings(target, settings) {
-                    if (Resource.isResource(settings))
-                        settings = Resource.store.getConfig(settings);
-                    angular.extend(actions, settings.actions || { });
-                    angular.extend(paramDefaults, settings.paramDefaults || { });
-                    angular.extend(options, settings.options || { });
-                    if (angular.isDefined(settings.url) && angular.isString(settings.url))
-                        url = settings.url;
-                    route = new Route(url, options);
-                    Resource.store(value, {
-                        config: {
-                            url: url,
-                            paramDefaults: paramDefaults,
-                            actions: actions,
-                            options: options,
-                        },
-                        pendingCorrection: false,
-                    });
-                    return true;
                 }
 
                 var promise = $http(httpConfig)

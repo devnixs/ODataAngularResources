@@ -1369,5 +1369,36 @@
                 expect(_config.ignoreLoadingBar).not.toBeDefined();
             });
         });
+        describe('Configuration and Options', function() {
+            var User, Metadata;
+            beforeEach(function () { });
+            it('should allow post initialization updates', function() {
+                $httpBackend.whenGET('/user$metadata').respond(200, '<metadata>test meteadata<metadata>');
+                $httpBackend.whenGET('/user').respond(200, [{ UserId: 5 }]);
+                Metadata = $odataresource('/user$metadata', {}, {
+                    get: {
+                        transformResponse: function(data) {
+                            return data.replace('<metadata>', '');
+                        },
+                    },
+                }, {});
+                User = $odataresource('/user', {}, {}, { isodatav4: true });
+                var user = User.odata().query();
+                $httpBackend.flush();
+                expect(user[0].UserId).toBe(5);
+                $httpBackend.expectPUT('/user').respond(500, undefined, undefined, 'Internal Server Error');
+                user[0].$update();
+                $httpBackend.flush();
+                var metadata = Metadata.odata().single(function (response) {
+                    expect(User.store.updateConfig(user)).toBe(false);
+                    User.store.updateConfig(user, '/user', {}, {}, { odatakey: 'UserId' });
+                });
+                $httpBackend.flush();
+                $httpBackend.expectPUT('/user(6)').respond(204, undefined, undefined, 'No Content');
+                user[0].UserId = 6;
+                user[0].$update();
+                $httpBackend.flush();
+            });
+        });
     });
 })();
