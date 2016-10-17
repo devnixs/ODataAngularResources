@@ -52,7 +52,11 @@ It does everything Angular Resources does but add some features:
 
 1. Download the repository or install the **bower package** : 
 ```Shell
-bower install angular-odata-resources
+bower install angular-odata-resources --save
+```
+or
+```Shell
+npm install angular-odata-resources --save
 ```
 2. Include the file **build/odataresources.js** into your project
 3. Be sure to register the module "ODataResources" in your module definition : 
