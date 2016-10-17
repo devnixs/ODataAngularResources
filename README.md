@@ -1,6 +1,20 @@
 [![Build Status](https://travis-ci.org/devnixs/ODataAngularResources.svg?branch=master)](https://travis-ci.org/devnixs/ODataAngularResources)
 [![Coverage Status](https://coveralls.io/repos/devnixs/ODataAngularResources/badge.svg?branch=master&15)](https://coveralls.io/r/devnixs/ODataAngularResources?branch=master)
 
+
+# <a name="odataangularresource"></a>ODataAngularResources
+
+ODataAngularResources is a fork of Angular's $resource that allows to make OData queries in a fluent way.
+It does everything Angular Resources does but add some features:
+
+  - Fluent API
+  - Generate proper OData queries without worrying about escaping the right characters
+  - Allows filtering, skipping, ordering, expanding, and selecting only N elements (with top)
+  - Able to generate complex queries with OR, AND and method calls
+
+[Simple JSFiddle Demo](http://jsfiddle.net/h22f7596/)
+
+
 # Table of Contents
 * [How to install](#how-to-install)
 * [How to use](#how-to-use)
@@ -36,18 +50,6 @@
 * [Run the tests](#unit-testing)
 * [Contribute](#contribute)
  
-# <a name="odataangularresource"></a>ODataAngularResources
-
-ODataAngularResources is a fork of Angular's $resource that allows to make OData queries in a fluent way.
-It does everything Angular Resources does but add some features:
-
-  - Fluent API
-  - Generate proper OData queries without worrying about escaping the right characters
-  - Allows filtering, skipping, ordering, expanding, and selecting only N elements (with top)
-  - Able to generate complex queries with OR, AND and method calls
-
-[Simple JSFiddle Demo](http://jsfiddle.net/h22f7596/)
-
 ## <a name="how-to-install"></a>How to install
 
 1. Download the repository or install the **bower package** : 
