@@ -1,5 +1,6 @@
 [![Build Status](https://travis-ci.org/devnixs/ODataAngularResources.svg?branch=master)](https://travis-ci.org/devnixs/ODataAngularResources)
 [![Coverage Status](https://coveralls.io/repos/devnixs/ODataAngularResources/badge.svg?branch=master&15)](https://coveralls.io/r/devnixs/ODataAngularResources?branch=master)
+[![CDNJS](https://img.shields.io/cdnjs/v/ODataResources.svg)](https://cdnjs.com/libraries/ODataResources)
 
 
 # <a name="odataangularresource"></a>ODataAngularResources
