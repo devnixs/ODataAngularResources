@@ -68,9 +68,10 @@ factory('$odataValue', [
             string = string.replace(/'/g, "''");
             return string;
         };
-        var ODataValue = function(input, type) {
+        var ODataValue = function(input, type, isCustomType) {
             this.value = input;
             this.type = type;
+			this.isCustomType = isCustomType;
         };
 
         var generateDate = function(date,isOdataV4){
@@ -159,7 +160,9 @@ factory('$odataValue', [
 	        		return this.value;
 	        	}else if(this.type.toLowerCase() === "int32"){
 	        		return parseInt(this.value)+"";
-	        	}else {
+	        	}else if(this.isCustomType){
+					return this.type + "'" + this.value + "'";
+				}else{
 	        		throw "Cannot convert "+this.value+" into "+this.type;
 	        	}
         	}else if(!isNaN(this.value)){
