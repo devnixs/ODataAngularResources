@@ -130,6 +130,17 @@
                     .toBe(1);
             });
 
+            it('filters should work with custom type', function() {
+                $httpBackend.expectGET("/user?$filter=Gender eq Enum.Namespace.Gender'Female'")
+                    .respond(200, [1, 2]);
+                User.odata()
+                    .filter(new $odata.Predicate("Gender", new $odata.Value("Female", "Enum.Namespace.Gender", true)))
+                    .query();
+                $httpBackend.flush();
+                expect(1)
+                    .toBe(1);
+            });
+
             it('should work with complex queries', function() {
                 $httpBackend.expectGET("/user?$filter=(Name eq 'Raphael') and (Age gt 20)&$orderby=Name desc&$top=20&$skip=10")
                     .respond(200, [1, 2]);
