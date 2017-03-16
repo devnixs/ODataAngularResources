@@ -12,7 +12,9 @@ factory('$odataValue', [
         };
         var escapeIllegalChars = function(string) {
             for (var key in illegalChars) {
-                string = string.replace(key, illegalChars[key]);
+                while (string.indexOf(key) != -1) {
+                    string = string.replace(key, illegalChars[key]);
+                }
             }
             string = string.replace(/'/g, "''");
             return string;
