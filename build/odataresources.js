@@ -53,20 +53,13 @@ angular.module('ODataResources').
 factory('$odataValue', [
 
     function() {
-        var illegalChars = {
-            '%': '%25',
-            '+': '%2B',
-            '/': '%2F',
-            '?': '%3F',
-            '#': '%23',
-            '&': '%26'
-        };
         var escapeIllegalChars = function(string) {
-            for (var key in illegalChars) {
-                while (string.indexOf(key) != -1) {
-                    string = string.replace(key, illegalChars[key]);
-                }
-            }
+            string = string.replace(/%/g, "%25");
+            string = string.replace(/\+/g, "%2B");
+            string = string.replace(/\//g, "%2F");
+            string = string.replace(/\?/g, "%3F");
+            string = string.replace(/#/g, "%23");
+            string = string.replace(/&/g, "%26");
             string = string.replace(/'/g, "''");
             return string;
         };
