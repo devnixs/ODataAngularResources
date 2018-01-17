@@ -81,7 +81,7 @@ factory('$odataExpandPredicate', ['$odataPredicate', '$odataBinaryOperation', '$
         for (var option in this.options) {
             if (this.options[option].length) {
                 if (option === 'filter') {
-                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.isv4, true));
+                    sub.push("$filter=" + ODataPredicate.and(this.options.filter).execute(this.context.isv4, true));
                 } else {
                     sub.push("$" + option + "=" + this.options[option].join(','));
                 }
