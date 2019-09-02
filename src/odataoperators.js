@@ -23,7 +23,8 @@ angular.module('ODataResources').
 			'sub':['-'],
 			'mul':['*'],
 			'div':['/'],
-			'mod':['%'],
+			'mod': ['%'],
+			'has': ['has']
   		};
 
   		var convertOperator = function(from){
